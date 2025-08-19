@@ -1,6 +1,7 @@
 {
   "name": "texxasrulez/roundcube-plugin-manager",
   "description": "Roundcube Plugin Manager: lists installed plugins, shows local vs latest versions, and highlights updates.",
+  "homepage": "https://github.com/texxasrulez/roundcube-plugin-manager",
   "type": "roundcube-plugin",
   "license": "MIT",
   "version": "0.2",
