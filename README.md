@@ -20,7 +20,7 @@ Lists installed plugins, shows local vs latest versions, and highlights **Update
 
 1. In your Roundcube root (the folder with `composer.json`), run:
    ```bash
-   composer require genesworld/roundcube-plugin-manager
+   composer require texxarulez/plugin_manager
    ```
    This uses `roundcube/plugin-installer` to place the plugin in `plugins/plugin_manager`.
 
