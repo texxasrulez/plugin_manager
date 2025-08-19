@@ -1,0 +1,56 @@
+<?php
+// Plugin Manager defaults
+// Copy this file to config.inc.php to override.
+
+$config['pm_remote_checks'] = true;        // enable Packagist/GitHub version checks
+$config['pm_cache_ttl']     = 43200;       // 12 hours
+$config['pm_plugin_root']   = null;        // null = auto-detect Roundcube's plugin dir
+$config['pm_request_timeout']= 7;          // seconds
+
+// Enable verbose logging to logs/plugin_manager (or temp dir depending on RC config)
+$config['pm_debug'] = false;
+
+// Optional: GitHub token to raise API rate limits for remote checks
+$config['pm_github_token'] = '';
+
+// List of plugin directories to hide from the Plugin Manager UI
+// Example: array('zipdownload', 'managesieve')
+// Note: Names must match the plugin directory names exactly (case-insensitive)
+// All plugins that ship with Roundcube are listed.
+$config['pm_hidden_plugins'] = array(
+    'acl',
+    'additional_message_headers',
+    'archive',
+    'attachment_reminder',
+    'autologon',
+    'autologout',
+    'database_attachments',
+    'debug_logger',
+    'emoticons',
+    'enigma',
+    'example_addressbook',
+    'filesystem_attachments',
+    'help',
+    'hide_blockquote',
+    'http_authentication',
+    'identicon',
+    'identity_select',
+    'jqueryui',
+    'krb_authentication',
+    'managesieve',
+    'markasjunk',
+    'newmail_notifier',
+    'new_user_dialog',
+    'new_user_identity',
+    'password',
+    'reconnect',
+    'redundant_attachments',
+    'show_additional_headers',
+    'squirrelmail_usercopy',
+    'subscriptions_option',
+    'userinfo',
+    'vcard_attachments',
+    'virtuser_file',
+    'virtuser_query',
+    'zipdownload'
+);

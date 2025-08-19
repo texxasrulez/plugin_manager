@@ -1,0 +1,8 @@
+<?php
+// Return mapping: 'plugin_dir' => ['packagist' => 'vendor/name', 'github' => 'owner/repo or https://github.com/owner/repo']
+return [
+  // 'archive' => ['bundled' => true],
+  // 'myplugin' => ['github' => 'owner/repo'],
+  // 'myplugin' => ['github' => 'myorg/myplugin'],
+  // 'otherplugin' => ['packagist' => 'vendor/otherplugin'],
+];
