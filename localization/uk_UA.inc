@@ -1,10 +1,11 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Менеджер плагінів';
-$labels['plugin_manager_desc'] = 'Перегляньте встановлені плагіни Roundcube і перевірте наявність оновлень.';
+$labels['plugin_manager_desc'] = 'Перевіряє встановлені плагіни Roundcube та наявність оновлень.';
 $labels['plugin'] = 'Плагін';
 $labels['directory'] = 'Каталог';
 $labels['enabled'] = 'Увімкнено';
+$labels['disabled'] = 'Інваліди';
 $labels['version_local'] = 'Локальна версія';
 $labels['version_remote'] = 'Остання версія';
 $labels['status'] = 'Статус';
@@ -16,9 +17,11 @@ $labels['not_checked'] = 'Не перевірено';
 $labels['refresh'] = 'Оновити';
 $labels['toggle_remote'] = 'Увімкніть віддалені перевірки';
 $labels['disable_remote'] = 'Вимкнути віддалені перевірки';
-$labels['remote_off_notice'] = 'Дистанційні перевірки вимкнено.';
 $labels['enable_remote'] = 'Увімкніть віддалені перевірки';
+$labels['remote_off_notice'] = 'Віддалені перевірки вимкнено!';
 $labels['sources'] = 'Джерела';
 $labels['packagist'] = 'Пакувальник';
 $labels['github'] = 'GitHub';
+$labels['pm_yes'] = 'Так';
+$labels['pm_no'] = 'Ні';
 ?>

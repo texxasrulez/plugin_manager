@@ -110,7 +110,35 @@ html.dark-mode .records-table#pm-table tbody tr:nth-child(even) {
   border: 2px solid #ff0000;    /* red outline */
   background-color: #ffe2e2;    /* light red background */
   color: #ff0000;               /* red text */
-  font-size: 12px;				/* font size */
+  font-size: 10px;				/* font size */
   font-weight: bold;            /* make text stand out */
   border-radius: 10px;          /* slightly rounded corners */
+}
+
+/* Various colors */
+.pm-enabled {
+font-weight:bold;
+color:#03780b;
+}
+ 
+.pm-disabled {
+font-weight:bold;
+color:#ff0000;
+}
+
+.pm-sort {
+white-space:nowrap;
+}
+
+.pm-sorted-asc:after {
+content:" \25B2";
+}
+
+.pm-sorted-desc:after {
+content:" \25BC";
+}
+
+.pm-ok {
+font-weight:bold;
+color:#03780b;
 }

@@ -149,8 +149,6 @@ function init()
     {
         try {
             $this->include_stylesheet($this->local_skin_path() . '/plugin_manager.css');
-            // Added .pm-ok for green bold "up_to_date"
-            $this->rc->output->add_header(html::tag('style', array(), '.pm-sort{white-space:nowrap} .pm-sorted-asc:after{content:" \25B2"} .pm-sorted-desc:after{content:" \25BC"} .pm-ok{font-weight:bold;color:#03780b}'));
             $this->log_debug('render_page start');
 
             $plugins = $this->discover_plugins();
@@ -179,10 +177,13 @@ function init()
                     }
                 }
 
+            // i18n-safe: store a boolean, not a localized string
+            $enabled_bool = in_array(basename($dir), $enabled, true);
+
             $rows[] = array(
                 'name'    => $info['name'],
                 'dir'     => basename($dir),
-                'enabled' => in_array(basename($dir), $enabled) ? 'Yes' : 'No',
+                'enabled' => $enabled_bool, // boolean
                 'local'   => $local_version ?: $this->gettext('unknown'),
                 'remote'  => $remote['version'],
                 'status'  => $remote['status'],
@@ -194,8 +195,8 @@ function init()
 
             $h = array();
             $h[] = '<div class="box">';
-            $h[] = '<h2>' . rcube::Q($this->gettext('plugin_manager_title')) . '</h2>';
-            $h[] = '<p>' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
+            $h[] = '<h2>&nbsp;&nbsp;' . rcube::Q($this->gettext('plugin_manager_title')) . '</h2>';
+            $h[] = '<p>&nbsp;&nbsp;&nbsp;&nbsp;' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
         if (!$this->remote_checks) {
             $u = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>1));
             $h[] = '&nbsp;&nbsp;<strong><div class="remote-off">' . rcube::Q($this->gettext('remote_off_notice')) . '</div></strong>';
@@ -235,7 +236,7 @@ if ($this->diag) {
             $h[] = '<thead><tr>'
                 . '<th class="pm-sort" data-type="text">' . rcube::Q($this->gettext('plugin')) . '</th>'
                 . '<th class="pm-sort" data-type="text">' . rcube::Q($this->gettext('directory')) . '</th>'
-                . '<th class="pm-sort" data-type="bool">' . rcube::Q($this->gettext('enabled')) . '</th>'
+                . '<th class="pm-sort" data-type="bool">' . rcube::Q($this->gettext('enabled')) . ' / ' . rcube::Q($this->gettext('disabled')) .'</th>'
                 . '<th class="pm-sort" data-type="semver">' . rcube::Q($this->gettext('version_local')) . '</th>'
                 . '<th class="pm-sort" data-type="semver">' . rcube::Q($this->gettext('version_remote')) . '</th>'
                 . '<th class="pm-sort" data-type="text">' . rcube::Q($this->gettext('status')) . '</th>'
@@ -263,7 +264,6 @@ if ($this->diag) {
             }
 
                 $links_html = array();
-            $check_now = '';
                 if (!empty($r['links']['packagist'])) {
                     $links_html[] = '<a target="_blank" rel="noreferrer" href="'.rcube::Q($r['links']['packagist']).'">Packagist</a>';
                 }
@@ -272,10 +272,17 @@ if ($this->diag) {
                 }
 
                 $rowcls = ($r['status'] === $this->gettext('bundled')) ? ' class="pm-bundled"' : '';
+
+                // Enabled column: i18n-safe label + data-sort attribute
+                $en_label_yes = rcube::Q($this->gettext('enabled'));
+                $en_label_no  = rcube::Q($this->gettext('disabled'));
+                $en_html = $r['enabled'] ? '<strong class="pm-enabled">' . $en_label_yes . '</strong>' : '<strong class="pm-disabled">' . $en_label_no . '</strong>';
+                $en_sort = $r['enabled'] ? '1' : '0';
+
             $h[] = '<tr' . $rowcls . '>'
                     . '<td>' . rcube::Q($r['name']) . '</td>'
                     . '<td>' . rcube::Q($r['dir']) . '</td>'
-                    . '<td>' . rcube::Q($r['enabled']) . '</td>'
+                    . '<td data-sort="' . $en_sort . '">' . $en_html . '</td>'
                     . '<td>' . rcube::Q($r['local']) . '</td>'
                     . '<td>' . rcube::Q($r['remote']) . '</td>'
                     . '<td>' . $st_html . '</td>'
@@ -289,7 +296,7 @@ if ($this->diag) {
 		(function(){
 		  var table = document.getElementById("pm-table");
 		  if (!table) return;
-		  var getText = function(cell){ return (cell.textContent || cell.innerText || "").trim(); };
+		  function cellText(cell){ return (cell && (cell.textContent || cell.innerText) || "").trim(); }
 		  function parseSemver(v){
 			v = (v||"").trim();
 			if (!v || v === "—") return {k:[-1]};
@@ -312,14 +319,14 @@ if ($this->diag) {
 			}
 			return {k:nums, raw:v};
 		  }
-		  function cmp(a,b,type){
+		  function cmpCells(aCell,bCell,type){
 			if (type==="bool"){
-			  var av = /^(yes|true|on|1)$/i.test(a) ? 1 : 0;
-			  var bv = /^(yes|true|on|1)$/i.test(b) ? 1 : 0;
+			  var av = parseInt(aCell.getAttribute("data-sort") || "0",10);
+			  var bv = parseInt(bCell.getAttribute("data-sort") || "0",10);
 			  return av - bv;
 			}
 			if (type==="semver"){
-			  var sa = parseSemver(a).k, sb = parseSemver(b).k;
+			  var sa = parseSemver(cellText(aCell)).k, sb = parseSemver(cellText(bCell)).k;
 			  var n = Math.max(sa.length, sb.length);
 			  for (var i=0;i<n;i++){
 				var ai = (i<sa.length)?sa[i]:0, bi=(i<sb.length)?sb[i]:0;
@@ -328,7 +335,7 @@ if ($this->diag) {
 			  return 0;
 			}
 			// default text, natural-ish compare (case-insensitive)
-			a = a.toLowerCase(); b = b.toLowerCase();
+			var a = cellText(aCell).toLowerCase(), b = cellText(bCell).toLowerCase();
 			if (a === b) return 0;
 			return a > b ? 1 : -1;
 		  }
@@ -345,9 +352,9 @@ if ($this->diag) {
 		  function sortBy(colIndex, type, dir){
 			var rows = Array.prototype.slice.call(tbody.rows);
 			rows.sort(function(r1,r2){
-			  var a = getText(r1.cells[colIndex]||{});
-			  var b = getText(r2.cells[colIndex]||{});
-			  var c = cmp(a,b,type);
+			  var c1 = r1.cells[colIndex]||document.createElement("td");
+			  var c2 = r2.cells[colIndex]||document.createElement("td");
+			  var c = cmpCells(c1,c2,type);
 			  return dir==="asc" ? c : -c;
 			});
 			var frag = document.createDocumentFragment();
@@ -670,5 +677,4 @@ private function http_get($url, $headers = array())
     $st = 0; $er = null;
     return $this->http_get2($url, $headers, $st, $er);
 }
-
 }

@@ -1,10 +1,11 @@
 <?php
 $labels = [
   'plugin_manager_title' => 'Plugin Manager',
-  'plugin_manager_desc'  => 'Inspect installed Roundcube plugins and check for updates.',
+  'plugin_manager_desc'  => 'Inspects installed Roundcube plugins and check for updates.',
   'plugin'               => 'Plugin',
   'directory'            => 'Directory',
   'enabled'              => 'Enabled',
+  'disabled'             => 'Disabled',
   'version_local'        => 'Local version',
   'version_remote'       => 'Latest version',
   'status'               => 'Status',
@@ -16,9 +17,11 @@ $labels = [
   'refresh'              => 'Refresh',
   'toggle_remote'        => 'Enable remote checks',
   'disable_remote'       => 'Disable remote checks',
-  'remote_off_notice'   => 'Remote checks are OFF.',
   'enable_remote'        => 'Enable remote checks',
+  'remote_off_notice'    => 'Remote checks are Disabled!',
   'sources'              => 'Sources',
   'packagist'            => 'Packagist',
   'github'               => 'GitHub',
+  'pm_yes'               => 'Yes',
+  'pm_no'                => 'No',
 ];
