@@ -66,7 +66,7 @@ function init()
         $this->timeout       = (int)$this->config->get('pm_request_timeout', 7);
         $this->remote_checks = (bool)$this->config->get('pm_remote_checks', true);
         $this->force_check   = isset($_GET['_pm_check']) ? (string)$_GET['_pm_check'] : '';
-                $this->debug         = (bool)$this->config->get('pm_debug', false) || isset($_GET['_pm_debug']);
+        $this->debug         = (bool)$this->config->get('pm_debug', false) || isset($_GET['_pm_debug']);
         $this->diag           = isset($_GET['_pm_diag']);
         $this->gh_token       = (string)$this->config->get('pm_github_token', '');
         $this->hidden_plugins = array();
@@ -149,7 +149,8 @@ function init()
     {
         try {
             $this->include_stylesheet($this->local_skin_path() . '/plugin_manager.css');
-            $this->rc->output->add_header(html::tag('style', array(), '.pm-sort{white-space:nowrap} .pm-sorted-asc:after{content:" \25B2"} .pm-sorted-desc:after{content:" \25BC"}'));
+            // Added .pm-ok for green bold "up_to_date"
+            $this->rc->output->add_header(html::tag('style', array(), '.pm-sort{white-space:nowrap} .pm-sorted-asc:after{content:" \25B2"} .pm-sorted-desc:after{content:" \25BC"} .pm-ok{font-weight:bold;color:#03780b}'));
             $this->log_debug('render_page start');
 
             $plugins = $this->discover_plugins();
@@ -197,7 +198,7 @@ function init()
             $h[] = '<p>' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
         if (!$this->remote_checks) {
             $u = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>1));
-            $h[] = '<strong><div class="warning" style="margin:8px 0; color: red;">' . rcube::Q($this->gettext('remote_off_notice')) . '</div></strong>';
+            $h[] = '&nbsp;&nbsp;<strong><div class="remote-off">' . rcube::Q($this->gettext('remote_off_notice')) . '</div></strong>';
         }
 
 
@@ -242,13 +243,21 @@ if ($this->diag) {
                 . '</tr></thead><tbody>';
 
             foreach ($rows as $r) {
-            // Build status cell HTML up-front (bold/color if update available)
+            // Build status cell HTML up-front (bold/color if update available; green+bold if up_to_date)
             $st = (string)$r['status'];
             $st_raw = strtolower($st);
             $st_html = rcube::Q($st);
+
+            // Bold red-ish for updates (existing behavior keeps class for custom skins)
             if ($st === $this->gettext('update_available') || strpos($st_raw, 'update') !== false) {
-                $st_html = '<strong class="pm-update">' . $st_html . '</strong>';
+                $st_html = '<strong class="pm-update">' . $st_html . '&nbsp;&nbsp;!!!</strong>';
             }
+
+            // NEW: bold + Green Color for up_to_date (uses localized string; English fallback)
+            if ($st === $this->gettext('up_to_date') || strpos($st_raw, 'up to date') !== false) {
+                $st_html = '<strong class="pm-ok">' . $st_html . '&nbsp;&nbsp;&#10003;</strong>';
+            }
+
             if (!empty($r['reason'])) {
                 $st_html .= ' <span class="hint">(' . rcube::Q(trim($r['reason'] . (empty($r['via']) ? '' : ( $r['reason'] ? ', ' : '' ) . 'via ' . $r['via']))) . ')</span>';
             }
@@ -277,91 +286,91 @@ if ($this->diag) {
             
         $h[] = '</tbody></table>';
         $h[] = '<script>
-(function(){
-  var table = document.getElementById("pm-table");
-  if (!table) return;
-  var getText = function(cell){ return (cell.textContent || cell.innerText || "").trim(); };
-  function parseSemver(v){
-    v = (v||"").trim();
-    if (!v || v === "—") return {k:[-1]};
-    // Handle "unknown" (translated or not): treat as lowest
-    var low = ["unknown","unk","?"];
-    var vl = v.toLowerCase();
-    for (var i=0;i<low.length;i++){ if (vl.indexOf(low[i]) !== -1) return {k:[-1]}; }
-    // strip leading v
-    v = v.replace(/^v/i,"");
-    // split by non-alphanum to capture digits and lex parts (e.g., -alpha)
-    var parts = v.split(/[^0-9a-zA-Z]+/).filter(Boolean);
-    var nums = [];
-    for (var j=0;j<parts.length;j++){
-      var p = parts[j];
-      if (/^\d+$/.test(p)) nums.push(parseInt(p,10));
-      else {
-        // pre-release tags sort lower than any numeric patch
-        nums.push(-0.5);
-      }
-    }
-    return {k:nums, raw:v};
-  }
-  function cmp(a,b,type){
-    if (type==="bool"){
-      var av = /^(yes|true|on|1)$/i.test(a) ? 1 : 0;
-      var bv = /^(yes|true|on|1)$/i.test(b) ? 1 : 0;
-      return av - bv;
-    }
-    if (type==="semver"){
-      var sa = parseSemver(a).k, sb = parseSemver(b).k;
-      var n = Math.max(sa.length, sb.length);
-      for (var i=0;i<n;i++){
-        var ai = (i<sa.length)?sa[i]:0, bi=(i<sb.length)?sb[i]:0;
-        if (ai !== bi) return ai - bi;
-      }
-      return 0;
-    }
-    // default text, natural-ish compare (case-insensitive)
-    a = a.toLowerCase(); b = b.toLowerCase();
-    if (a === b) return 0;
-    return a > b ? 1 : -1;
-  }
-  var thead = table.tHead;
-  if (!thead) return;
-  var headers = thead.rows[0].cells;
-  var tbody = table.tBodies[0];
-  function clearSortIndicators(){
-    for (var i=0;i<headers.length;i++){
-      headers[i].removeAttribute("aria-sort");
-      headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");
-    }
-  }
-  function sortBy(colIndex, type, dir){
-    var rows = Array.prototype.slice.call(tbody.rows);
-    rows.sort(function(r1,r2){
-      var a = getText(r1.cells[colIndex]||{});
-      var b = getText(r2.cells[colIndex]||{});
-      var c = cmp(a,b,type);
-      return dir==="asc" ? c : -c;
-    });
-    var frag = document.createDocumentFragment();
-    rows.forEach(function(r){ frag.appendChild(r); });
-    tbody.appendChild(frag);
-    clearSortIndicators();
-    headers[colIndex].setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
-    headers[colIndex].classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");
-  }
-  var state = {col: null, dir: "asc"};
-  for (let i=0;i<headers.length;i++){
-    let th = headers[i];
-    if (!th.classList.contains("pm-sort")) continue;
-    th.style.cursor = "pointer";
-    th.setAttribute("role","button");
-    th.addEventListener("click", function(){
-      var type = th.getAttribute("data-type") || "text";
-      if (state.col === i){ state.dir = (state.dir==="asc"?"desc":"asc"); }
-      else { state.col = i; state.dir = "asc"; }
-      sortBy(i, type, state.dir);
-    });
-  }
-})();</script>';
+		(function(){
+		  var table = document.getElementById("pm-table");
+		  if (!table) return;
+		  var getText = function(cell){ return (cell.textContent || cell.innerText || "").trim(); };
+		  function parseSemver(v){
+			v = (v||"").trim();
+			if (!v || v === "—") return {k:[-1]};
+			// Handle "unknown" (translated or not): treat as lowest
+			var low = ["unknown","unk","?"];
+			var vl = v.toLowerCase();
+			for (var i=0;i<low.length;i++){ if (vl.indexOf(low[i]) !== -1) return {k:[-1]}; }
+			// strip leading v
+			v = v.replace(/^v/i,"");
+			// split by non-alphanum to capture digits and lex parts (e.g., -alpha)
+			var parts = v.split(/[^0-9a-zA-Z]+/).filter(Boolean);
+			var nums = [];
+			for (var j=0;j<parts.length;j++){
+			  var p = parts[j];
+			  if (/^\d+$/.test(p)) nums.push(parseInt(p,10));
+			  else {
+				// pre-release tags sort lower than any numeric patch
+				nums.push(-0.5);
+			  }
+			}
+			return {k:nums, raw:v};
+		  }
+		  function cmp(a,b,type){
+			if (type==="bool"){
+			  var av = /^(yes|true|on|1)$/i.test(a) ? 1 : 0;
+			  var bv = /^(yes|true|on|1)$/i.test(b) ? 1 : 0;
+			  return av - bv;
+			}
+			if (type==="semver"){
+			  var sa = parseSemver(a).k, sb = parseSemver(b).k;
+			  var n = Math.max(sa.length, sb.length);
+			  for (var i=0;i<n;i++){
+				var ai = (i<sa.length)?sa[i]:0, bi=(i<sb.length)?sb[i]:0;
+				if (ai !== bi) return ai - bi;
+			  }
+			  return 0;
+			}
+			// default text, natural-ish compare (case-insensitive)
+			a = a.toLowerCase(); b = b.toLowerCase();
+			if (a === b) return 0;
+			return a > b ? 1 : -1;
+		  }
+		  var thead = table.tHead;
+		  if (!thead) return;
+		  var headers = thead.rows[0].cells;
+		  var tbody = table.tBodies[0];
+		  function clearSortIndicators(){
+			for (var i=0;i<headers.length;i++){
+			  headers[i].removeAttribute("aria-sort");
+			  headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");
+			}
+		  }
+		  function sortBy(colIndex, type, dir){
+			var rows = Array.prototype.slice.call(tbody.rows);
+			rows.sort(function(r1,r2){
+			  var a = getText(r1.cells[colIndex]||{});
+			  var b = getText(r2.cells[colIndex]||{});
+			  var c = cmp(a,b,type);
+			  return dir==="asc" ? c : -c;
+			});
+			var frag = document.createDocumentFragment();
+			rows.forEach(function(r){ frag.appendChild(r); });
+			tbody.appendChild(frag);
+			clearSortIndicators();
+			headers[colIndex].setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
+			headers[colIndex].classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");
+		  }
+		  var state = {col: null, dir: "asc"};
+		  for (let i=0;i<headers.length;i++){
+			let th = headers[i];
+			if (!th.classList.contains("pm-sort")) continue;
+			th.style.cursor = "pointer";
+			th.setAttribute("role","button");
+			th.addEventListener("click", function(){
+			  var type = th.getAttribute("data-type") || "text";
+			  if (state.col === i){ state.dir = (state.dir==="asc"?"desc":"asc"); }
+			  else { state.col = i; state.dir = "asc"; }
+			  sortBy(i, type, state.dir);
+			});
+		  }
+		})();</script>';
 
         $h[] = '</div>';
         $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
@@ -466,9 +475,7 @@ if ($this->diag) {
             if ($v !== '') return $v;
         }
         return null;
-    }
-
-    
+    }    
 
 private function load_sources_map() {
     $file = $this->home . '/sources.map.php';
@@ -619,7 +626,6 @@ private function load_sources_map() {
         $b = ltrim((string)$remote, 'v');
         return version_compare($a, $b);
     }
-
 
 private function http_get2($url, $headers = array(), &$status = null, &$err = null)
 {
