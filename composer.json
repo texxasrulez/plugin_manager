@@ -4,7 +4,7 @@
   "homepage": "https://github.com/texxasrulez/plugin_manager",
   "type": "roundcube-plugin",
   "license": "MIT",
-  "version": "0.2",
+  "version": "0.3",
     "authors": [
         {
             "name": "Gene Hawkins",
