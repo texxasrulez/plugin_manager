@@ -62,3 +62,5 @@ You can suppress specific plugins from appearing in the Plugin Manager by adding
 $config['pm_hidden_plugins'] = array('zipdownload', 'managesieve');
 ```
 This only affects display in the manager; it does **not** enable/disable the plugin itself.
+
+![Alt text](/tests/plugin-manager-screenshot.png?raw=true "Plugin Manager Screenshot")
