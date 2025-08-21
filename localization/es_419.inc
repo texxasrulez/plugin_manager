@@ -11,7 +11,7 @@ $labels['version_remote'] = 'Última versión';
 $labels['status'] = 'Estado';
 $labels['actions'] = 'Acciones';
 $labels['unknown'] = 'desconocido';
-$labels['up_to_date'] = 'Al día';
+$labels['up_to_date'] = 'Hasta la fecha';
 $labels['update_available'] = 'Actualización disponible';
 $labels['not_checked'] = 'No comprobado';
 $labels['refresh'] = 'Actualizar';
@@ -24,4 +24,5 @@ $labels['packagist'] = 'Empaquetador';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Sí';
 $labels['pm_no'] = 'No';
+$labels['updateall'] = 'Actualizar todos los plugins';
 ?>

@@ -24,4 +24,5 @@ $labels['packagist'] = 'パッカジスト';
 $labels['github'] = 'ギットハブ';
 $labels['pm_yes'] = 'はい';
 $labels['pm_no'] = 'いいえ';
+$labels['updateall'] = 'すべてのプラグインを更新する';
 ?>

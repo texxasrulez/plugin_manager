@@ -24,4 +24,5 @@ $labels['packagist'] = 'Пакувальник';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Так';
 $labels['pm_no'] = 'Ні';
+$labels['updateall'] = 'Оновити всі плагіни';
 ?>

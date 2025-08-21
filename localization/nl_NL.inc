@@ -24,4 +24,5 @@ $labels['packagist'] = 'Verpakker';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Ja';
 $labels['pm_no'] = 'Geen';
+$labels['updateall'] = 'Alle plugins bijwerken';
 ?>

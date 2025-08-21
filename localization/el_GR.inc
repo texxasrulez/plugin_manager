@@ -10,7 +10,7 @@ $labels['version_local'] = 'Τοπική έκδοση';
 $labels['version_remote'] = 'Τελευταία έκδοση';
 $labels['status'] = 'Κατάσταση';
 $labels['actions'] = 'Δράσεις';
-$labels['unknown'] = 'άγνωστο';
+$labels['unknown'] = 'unknown';
 $labels['up_to_date'] = 'Μέχρι σήμερα';
 $labels['update_available'] = 'Διαθέσιμη ενημέρωση';
 $labels['not_checked'] = 'Δεν έχει ελεγχθεί';
@@ -24,4 +24,5 @@ $labels['packagist'] = 'Συσκευαστής';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Ναι';
 $labels['pm_no'] = 'Όχι';
+$labels['updateall'] = 'Ενημέρωση όλων των Plugins';
 ?>

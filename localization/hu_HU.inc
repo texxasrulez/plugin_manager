@@ -24,4 +24,5 @@ $labels['packagist'] = 'Csomagoló';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Igen';
 $labels['pm_no'] = 'Nem';
+$labels['updateall'] = 'Minden bővítmény frissítése';
 ?>

@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Evet';
 $labels['pm_no'] = 'Hayır';
+$labels['updateall'] = 'Tüm Eklentileri Güncelleyin';
 ?>

@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = '예';
 $labels['pm_no'] = '아니요';
+$labels['updateall'] = '모든 플러그인 업데이트';
 ?>

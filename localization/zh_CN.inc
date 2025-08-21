@@ -24,4 +24,5 @@ $labels['packagist'] = '包装专家';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = '是';
 $labels['pm_no'] = '没有';
+$labels['updateall'] = '更新所有插件';
 ?>

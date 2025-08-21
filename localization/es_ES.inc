@@ -24,4 +24,5 @@ $labels['packagist'] = 'Empaquetador';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Sí';
 $labels['pm_no'] = 'No';
+$labels['updateall'] = 'Actualizar todos los plugins';
 ?>

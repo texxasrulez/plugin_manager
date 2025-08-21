@@ -24,4 +24,5 @@ $labels['packagist'] = 'Pakendaja';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Jah';
 $labels['pm_no'] = 'Ei';
+$labels['updateall'] = 'Kõikide pluginate uuendamine';
 ?>

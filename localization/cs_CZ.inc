@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Ano';
 $labels['pm_no'] = 'Ne';
+$labels['updateall'] = 'Aktualizace všech zásuvných modulů';
 ?>

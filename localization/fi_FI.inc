@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Kyllä';
 $labels['pm_no'] = 'Ei';
+$labels['updateall'] = 'Päivitä kaikki lisäosat';
 ?>

@@ -24,4 +24,5 @@ $labels['packagist'] = 'الحزم';
 $labels['github'] = 'جيثب';
 $labels['pm_yes'] = 'نعم';
 $labels['pm_no'] = 'لا يوجد';
+$labels['updateall'] = 'تحديث جميع المكونات الإضافية';
 ?>

@@ -1,22 +1,80 @@
 <?php
-// Plugin Manager defaults
-// Copy this file to config.inc.php to override.
+// Plugin Manager configuration (dist)
 
-$config['pm_remote_checks'] = true;        // enable Packagist/GitHub version checks
-$config['pm_cache_ttl']     = 43200;       // 12 hours
-$config['pm_plugin_root']   = null;        // null = auto-detect Roundcube's plugin dir
-$config['pm_request_timeout']= 7;          // seconds
-
-// Enable verbose logging to logs/plugin_manager (or temp dir depending on RC config)
+// ===== Core behavior =====
 $config['pm_debug'] = false;
+$config['pm_remote_checks'] = true;           // query GitHub for remote versions
+$config['pm_request_timeout'] = 7;            // HTTP timeout (seconds)
+$config['pm_cache_ttl'] = 43200;              // remote check cache TTL (seconds)
+$config['pm_plugin_root'] = null;             // override plugins root dir (null = auto)
+$config['pm_update_channel'] = 'release';     // 'release' or 'dev'
+
+// Map specific plugin dirs to GitHub repos (owner/repo or full URL)
+$config['pm_sources_map'] = [
+  // 'account_details' => 'https://github.com/owner/repo',
+];
 
 // Optional: GitHub token to raise API rate limits for remote checks
-$config['pm_github_token'] = '';
+$config['pm_github_token'] = '';              // e.g. 'ghp_xxxxx...'
 
-// List of plugin directories to hide from the Plugin Manager UI
-// Example: array('zipdownload', 'managesieve')
-// Note: Names must match the plugin directory names exactly (case-insensitive)
-// All plugins that ship with Roundcube are listed.
+// Hide backup folders in UI and actions
+$config['pm_hide_bak'] = true;
+
+// ===== Admins =====
+$config['pm_update_admins'] = [1];            // only these Roundcube user IDs see Update/Restore/Bulk
+
+// ===== UI niceties =====
+$config['pm_column_widths'] = [
+  'local'  => '8%',
+  'latest' => '8%',
+  'status' => '20%',
+];
+
+// ===== Backups & retention =====
+$config['pm_backups'] = true;                 // create .bak-YYYYmmdd-HHMMSS before updating
+$config['pm_keep_backups'] = 3;               // keep newest N backups per plugin (set <1 for unlimited)
+$config['pm_backups_max_age_days'] = 90;      // also delete backups older than N days (0 disables)
+
+// ===== Bulk update =====
+$config['pm_enable_update_all'] = true;       // show top-level "Update All" button
+
+// ===== Email alerts (lazy cron) =====
+$config['pm_notify_enabled'] = true;
+$config['pm_notify_recipients'] = ['admin@domain.net'];
+$config['pm_notify_from'] = 'admin@domain.net';
+$config['pm_notify_interval_hours'] = 12;
+
+// ===== Policies: pins & ignore (scoped) =====
+$config['pm_features_enabled'] = true;        // master switch for optional features
+$config['pm_policies_enabled'] = true;
+
+// Pins (highest precedence). Shown with [Pinned vX.Y]; excluded from bulk/alerts.
+$config['pm_pins_enabled'] = true;
+$config['pm_pins'] = [
+  // 'plugin_dir' => 'version',
+  // 'account_details' => '3.4',
+];
+$config['pm_pins_allow_manual'] = true;       // allow manual Update even when pinned
+
+// Ignore rules with scopes: discover, notify, bulk, ui
+$config['pm_ignore_enabled'] = true;
+$config['pm_ignore_rules'] = [
+  // ['plugin' => 'some_plugin', 'scopes' => ['bulk','notify'], 'reason' => 'local patch'],
+  // ['pattern' => '/^rcmail_.*/i', 'scopes' => ['ui'], 'reason' => 'core system'],
+];
+
+// ===== Webhooks =====
+$config['pm_webhook_enabled'] = false;
+$config['pm_webhook_url'] = '';               // Slack/Discord/Teams incoming webhook URL
+$config['pm_webhook_events'] = ['notify','update','bulk']; // choose events
+
+// ===== Security: checksum enforcement (release channel) =====
+$config['pm_require_checksum'] = false;       // require a SHA256 asset for release zips
+$config['pm_checksum_asset_regex'] = '/(sha256|checksums).*\.(txt|sha256)$/i';
+
+// ===== Hidden plugins (do not show in UI) =====
+// Names must match plugin directory names (case-insensitive).
+// Pre-fill with Roundcube core plugins you might not want managed here.
 $config['pm_hidden_plugins'] = array(
     'acl',
     'additional_message_headers',

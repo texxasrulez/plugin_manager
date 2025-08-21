@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Да';
 $labels['pm_no'] = 'Нет';
+$labels['updateall'] = 'Обновите все плагины';
 ?>

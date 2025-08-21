@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Tak';
 $labels['pm_no'] = 'Nie';
+$labels['updateall'] = 'Zaktualizuj wszystkie wtyczki';
 ?>

@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Quản lý plugin';
-$labels['plugin_manager_desc'] = 'Kiểm tra các plugin Roundcube đã cài đặt và kiểm tra xem có bản cập nhật nào không.';
+$labels['plugin_manager_desc'] = 'Kiểm tra các plugin Roundcube đã cài đặt và kiểm tra cập nhật.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Thư mục';
 $labels['enabled'] = 'Đã bật';
@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Đúng';
 $labels['pm_no'] = 'Không';
+$labels['updateall'] = 'Cập nhật tất cả các plugin';
 ?>

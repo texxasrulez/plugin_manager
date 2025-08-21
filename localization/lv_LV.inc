@@ -24,4 +24,5 @@ $labels['packagist'] = 'Iepakotājs';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Jā';
 $labels['pm_no'] = 'Nē';
+$labels['updateall'] = 'Visu spraudņu atjaunināšana';
 ?>

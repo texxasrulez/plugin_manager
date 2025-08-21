@@ -14,7 +14,7 @@ $labels['unknown'] = 'unbekannt';
 $labels['up_to_date'] = 'Aktualität';
 $labels['update_available'] = 'Update verfügbar';
 $labels['not_checked'] = 'Nicht geprüft';
-$labels['refresh'] = 'Aktualisieren';
+$labels['refresh'] = 'Auffrischen';
 $labels['toggle_remote'] = 'Aktivieren von Fernprüfungen';
 $labels['disable_remote'] = 'Fernprüfungen deaktivieren';
 $labels['enable_remote'] = 'Aktivieren von Fernprüfungen';
@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Ja';
 $labels['pm_no'] = 'Nein';
+$labels['updateall'] = 'Alle Plugins aktualisieren';
 ?>

@@ -24,4 +24,5 @@ $labels['packagist'] = 'Pengemas';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Ya';
 $labels['pm_no'] = 'Tidak';
+$labels['updateall'] = 'Perbarui Semua Plugin';
 ?>

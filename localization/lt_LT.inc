@@ -17,11 +17,12 @@ $labels['not_checked'] = 'Nepatikrinta';
 $labels['refresh'] = 'Atnaujinti';
 $labels['toggle_remote'] = 'Įgalinti nuotolinius patikrinimus';
 $labels['disable_remote'] = 'Išjungti nuotolinius patikrinimus';
-$labels['enable_remote'] = 'Įjungti nuotolinius patikrinimus';
+$labels['enable_remote'] = 'Įgalinti nuotolinius patikrinimus';
 $labels['remote_off_notice'] = 'Nuotoliniai patikrinimai yra išjungti!';
 $labels['sources'] = 'Šaltiniai';
 $labels['packagist'] = 'Packagist';
 $labels['github'] = '"GitHub"';
 $labels['pm_yes'] = 'Taip';
 $labels['pm_no'] = 'Ne';
+$labels['updateall'] = 'Atnaujinti visus įskiepius';
 ?>

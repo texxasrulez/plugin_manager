@@ -13,6 +13,7 @@ $labels = [
   'unknown'              => 'unknown',
   'up_to_date'           => 'Up to date',
   'update_available'     => 'Update available',
+  'updateall'    		 => 'Update All Plugins',
   'not_checked'          => 'Not checked',
   'refresh'              => 'Refresh',
   'toggle_remote'        => 'Enable remote checks',

@@ -24,4 +24,5 @@ $labels['packagist'] = 'Packagist';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'כן';
 $labels['pm_no'] = 'לא';
+$labels['updateall'] = 'עדכן את כל התוספים';
 ?>
