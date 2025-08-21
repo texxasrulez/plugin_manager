@@ -65,4 +65,5 @@ $config['pm_hidden_plugins'] = array('zipdownload', 'managesieve');
 ```
 This only affects display in the manager; it does **not** enable/disable the plugin itself.
 
-![Alt text](/images/plugin-manager-screenshot.png?raw=true "Plugin Manager Screenshot")
+![Alt text](/images/plugin-manager-screenshot.png?raw=true "Plugin Manager Screenshot Up to Date")
+![Alt text](/images/plugin-manager-screenshot-update.png?raw=true "Plugin Manager Screenshot with and Update peding")
