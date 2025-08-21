@@ -12,6 +12,8 @@ Lists installed plugins, shows local vs latest versions, and highlights **Update
 - Diagnostics panel for connectivity
 - `sources.map.php` to resolve outliers or mark plugins as **bundled**
 - Scroll-friendly UI for large lists
+- Single or Multiple plugin updates
+- Restore from Backup (note)
 
 
 # Install
