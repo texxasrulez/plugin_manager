@@ -175,12 +175,12 @@ class plugin_manager extends rcube_plugin
             if ($pm_all) { /* inline bulk path */
                 $res = $this->update_all_outdated($pm_dry);
                 $summary = $pm_dry
-                    ? sprintf('Dry-run complete: %d would update, %d would fail, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']))
-                    : sprintf('Bulk update complete: %d updated, %d failed, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']));
+                    ? sprintf(rcube::Q($this->gettext('testing_complete')) . ': %d would update, %d would fail, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']))
+                    : sprintf(rcube::Q($this->gettext('bulk_update_complete')) . ': %d updated, %d failed, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']));
                 // Persist message via flash (more reliable across redirect/skins)
                 $this->flash_add($summary, $pm_dry ? 'notice' : ($res['fail'] ? 'warning' : 'confirmation'));
                 if (!empty($res['skipped'])) {
-                    $detail = 'Details: ' . $this->format_skip_reasons($res['skipped']);
+                    $detail = rcube::Q($this->gettext('details')) . ': ' . $this->format_skip_reasons($res['skipped']);
                     $this->flash_add($detail, 'notice');
                 }
                 $this->send_webhook('bulk', array('ok'=>$res['ok'],'fail'=>$res['fail']));
@@ -199,9 +199,9 @@ class plugin_manager extends rcube_plugin
             try {
                 $bak = $this->restore_plugin($pm_dir);
                 if ($bak) {
-                    $this->flash_add('Restore finished: ' . rcube::Q($pm_dir) . ' <= ' . rcube::Q($bak), 'confirmation');
+                    $this->flash_add(''. rcube::Q($this->gettext('restore_finished')) .': ' . rcube::Q($pm_dir) . ' <= ' . rcube::Q($bak), 'confirmation');
                 } else {
-                    $this->flash_add('Nothing to restore for: ' . rcube::Q($pm_dir), 'notice');
+                    $this->flash_add(''. rcube::Q($this->gettext('restore_nothing')) .': ' . rcube::Q($pm_dir), 'notice');
                 }
             } catch (Exception $ex) {
                 $this->flash_add('Restore failed: ' . rcube::Q($ex->getMessage()), 'error');
@@ -215,16 +215,16 @@ class plugin_manager extends rcube_plugin
             try {
                 $ok = $this->perform_update($pm_dir);
                 if ($ok === true) {
-                    $this->flash_add('Plugin updated successfully.', 'confirmation');
+                    $this->flash_add(rcube::Q($this->gettext('plugin_update_good')) . '.', 'confirmation');
                     $this->send_webhook('update', array('plugin'=>$pm_dir));
                     $this->rc->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
                     return;
                 } else {
-                    $this->flash_add('Update finished: ' . rcube::Q((string)$ok), 'notice');
+                    $this->flash_add(rcube::Q($this->gettext('udpate_finished')) . ': ' . rcube::Q((string)$ok), 'notice');
                 }
             } catch (Exception $e) {
                 $this->log_debug('inline update error', array('plugin'=>$pm_dir, 'err'=>$e->getMessage()));
-                $this->flash_add('Update failed: ' . rcube::Q($e->getMessage()), 'error');
+                $this->flash_add(rcube::Q($this->gettext('udpate_failed')) . ': ' . rcube::Q($e->getMessage()), 'error');
                 $this->send_webhook('update', array('plugin'=>$pm_dir, 'error'=>true));
                 $this->rc->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
                 return;
@@ -263,11 +263,11 @@ class plugin_manager extends rcube_plugin
             $this->log_debug('bulk_handler', array('where'=>'render_page'));
             $res = $this->update_all_outdated($pm_dry);
             $summary = $pm_dry
-                ? sprintf('Dry-run complete: %d would update, %d would fail, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']))
-                : sprintf('Bulk update complete: %d updated, %d failed, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']));
+                ? sprintf(rcube::Q($this->gettext('testing_complete')) . ': %d would update, %d would fail, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']))
+                : sprintf(rcube::Q($this->gettext('bulk_update_complete')) . ': %d updated, %d failed, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']));
             $this->flash_add($summary, $pm_dry ? 'notice' : ($res['fail'] ? 'warning' : 'confirmation'));
             if (!empty($res['skipped'])) {
-                $detail = 'Details: ' . rcube::Q($this->format_skip_reasons($res['skipped']));
+                $detail = rcube::Q($this->gettext('details')) . ': ' . rcube::Q($this->format_skip_reasons($res['skipped']));
                 $this->flash_add($detail, 'notice');
             }
             $this->send_webhook('bulk', array('ok'=>$res['ok'],'fail'=>$res['fail']));
@@ -367,7 +367,7 @@ class plugin_manager extends rcube_plugin
 
             if ($this->diag) {
                 $h[] = '<div class="box propform">';
-                $h[] = '<h3>Connectivity diagnostics</h3>';
+                $h[] = '<h3>&nbsp;&nbsp;&nbsp;' . rcube::Q($this->gettext('conn_diag')) . '</h3>';
                 $ok = array(); $msgs = array();
                 // Packagist test
                 $st=0;$er=null; $this->http_get2('https://repo.packagist.org/p2/roundcube/roundcubemail.json', array(), $st, $er);
@@ -375,21 +375,21 @@ class plugin_manager extends rcube_plugin
                 $hdrs = array('User-Agent: Roundcube-Plugin-Manager');
                 if (!empty($this->gh_token)) { $hdrs[] = 'Authorization: token ' . $this->gh_token; }
                 $stg=0;$erg=null; $this->http_get2('https://api.github.com/repos/roundcube/roundcubemail/releases/latest', $hdrs, $stg, $erg);
-                $ok[] = 'GitHub releases: HTTP ' . intval($stg);
+                $ok[] = rcube::Q($this->gettext('github_test')) . intval($stg);
                 $h[] = '<ul><li>' . rcube::Q(implode('</li><li>', $ok)) . '</li></ul>';
                 $h[] = '</div>';
             }
 
             if ($this->debug) {
-                $h[] = '<div class="pm-disabled"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Debug on</strong>. Check logs/plugin_manager.log</div>';
+                $h[] = '<div class="pm-disabled"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' . rcube::Q($this->gettext('debug_on')) . '</strong>. ' . rcube::Q($this->gettext('debug_on_text')) . '</div>';
             }
             $h[] = '<div style="margin:8px 0;">';
 
-            $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager')) . '">Reload</a> ' .
-                   '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1)) . '">Diagnostics</a> ';
+            $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager')) . '">' . rcube::Q($this->gettext('reload_page')) . '</a> ' .
+                   '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1)) . '">' . rcube::Q($this->gettext('diagnostics')) . '</a> ';
             $toggle_label = $this->remote_checks ? $this->gettext('disable_remote') : $this->gettext('enable_remote');
             $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>($this->remote_checks?0:1))) . '">' . rcube::Q($toggle_label) . '</a>' .
-                   ' <a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '">Refresh versions</a>';
+                   ' <a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '">' . rcube::Q($this->gettext('refresh_versions')) . '</a>&nbsp;&nbsp;<span class="pm-lastupdate" style="margin:6px 0 4px 0;">' . rcube::Q($this->gettext('last_checked')) . ':&nbsp;' . ( $this->last_ts ? '<span class="pm-checked">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '<span class="pm-checked">'. rcube::Q($this->gettext('never')) .'</span>' ) . '</div>';
             $h[] = '</div>';
             $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
 
@@ -397,12 +397,12 @@ class plugin_manager extends rcube_plugin
                 $eligible = (int)$this->eligible_count();
                 $btn  = '<div class="pm-bulkbar" style="margin:10px 0;">';
                 $btn .= '<a class="button pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1"';
-                $btn .= ' onclick="if(!confirm(&quot;Update all out-of-date plugins?&quot;)) return false; this.textContent=&quot;Updating all...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">';
-                $btn .= 'Update All <span class="pm-badge" style="margin-left:8px;padding:2px 7px;border-radius:10px;font-size:85%;display:inline-block;">' . $eligible . '</span>';
+                $btn .= ' onclick="if(!confirm(&quot; '. rcube::Q($this->gettext('update_all_ood')) . '?&quot;)) return false; this.textContent=&quot;'. rcube::Q($this->gettext('update_all')) . '...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">';
+                $btn .= rcube::Q($this->gettext('updateall')) . ' <span class="pm-badge" style="margin-left:8px;padding:2px 7px;border-radius:10px;font-size:85%;display:inline-block;">' . $eligible . '</span>';
                 $btn .= '</a>';
                 $btn .= ' <a class="button pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1&_pm_dry=1"';
-                $btn .= ' onclick="this.textContent=\'Dry-running...\'; this.style.pointerEvents=\'none\'; return true;">';
-                $btn .= 'Dry-Run';
+                $btn .= ' onclick="this.textContent=\'' .rcube::Q($this->gettext('testing_update')) . ' ...\'; this.style.pointerEvents=\'none\'; return true;">';
+                $btn .= rcube::Q($this->gettext('test_update'));
                 $btn .= '</a></div>';
                 $h[] = $btn;
             }
@@ -423,7 +423,7 @@ class plugin_manager extends rcube_plugin
                 // Precompute optional Update All anchor (config-gated)
                 $uall_html = '';
                 if ($this->cfg_true('pm_enable_update_all', true) && $this->is_update_admin()) {
-                    $uall_html = ' <a class="pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1" onclick="this.textContent=&quot;Updating all...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">[Update All]</a>';
+                    $uall_html = ' <a class="pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1" onclick="this.textContent=&quot;' . rcube::Q($this->gettext('updating_all')) .  '...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">[' . rcube::Q($this->gettext('update')) . ']</a>';
                 }
 
                 $dir_name = basename($r['dir']);
@@ -440,7 +440,7 @@ class plugin_manager extends rcube_plugin
                     $uid = method_exists($this->rc, 'get_user_id') ? intval($this->rc->get_user_id()) : (isset($this->rc->user) && isset($this->rc->user->ID) ? intval($this->rc->user->ID) : 0);
                     if ($this->is_update_admin() && (empty($r['policy']['pinned']) || $this->config->get('pm_pins_allow_manual', true))) {
                         $u = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_update'=>1,'_pm'=>$r['dir']));
-                        $st_html .= ' <a class="pm-update-link" href="' . rcube::Q($u) . '" onclick="if(!confirm(\'Download and update this plugin?\')) return false; this.textContent=\'Updating...\'; this.style.pointerEvents=\'none\'; return true;">[Update]</a>';
+                        $st_html .= ' <a class="pm-update-link" href="' . rcube::Q($u) . '" onclick="if(!confirm(\'' . rcube::Q($this->gettext('dnload_update')) . '?\')) return false; this.textContent=\'' . rcube::Q($this->gettext('updating')) . '...\'; this.style.pointerEvents=\'none\'; return true;">[Update]</a>';
                         // Optional global Update All button is injected at top of the page; no per-row "Update All" here.
                     }
 
@@ -465,7 +465,7 @@ class plugin_manager extends rcube_plugin
                 // Offer Restore if a backup exists (admin-only), even when up to date
                 if ($this->is_update_admin() && $this->has_backup($dir_name)) {
                     $rst  = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_restore'=>1,'_pm'=>$r['dir']));
-                    $st_html .= ' <a class="pm-restore-link" href="' . rcube::Q($rst) . '" onclick="return confirm(\'Restore last backup for this plugin?\');">[Restore]</a>';
+                    $st_html .= ' <a class="pm-restore-link" href="' . rcube::Q($rst) . '" onclick="return confirm(\' '. rcube::Q($this->gettext('version_local')) . '?\');">[' . rcube::Q($this->gettext('restore')) . ']</a>';
                 }
 
                 if (!empty($r['reason']) || !empty($r['via'])) {
@@ -475,22 +475,22 @@ class plugin_manager extends rcube_plugin
                 // Inline skip reasons tooltip (explains why Update All would skip this row)
                 $__skip_msgs = array();
                 if (!empty($r['policy']['pinned'])) {
-                    $__skip_msgs[] = 'Pinned to ' . rcube::Q((string)$r['policy']['pinned']);
+                    $__skip_msgs[] = '' . rcube::Q($this->gettext('pin_to')) . ' ' . rcube::Q((string)$r['policy']['pinned']);
                 }
                 if (!empty($r['policy']['ignored']['bulk'])) {
-                    $__skip_msgs[] = 'Ignored for bulk updates';
+                    $__skip_msgs[] = rcube::Q($this->gettext('ignore_updates'));
                 }
                 if (!empty($r['policy']['ignored']['discover'])) {
-                    $__skip_msgs[] = 'Remote discovery disabled by policy';
+                    $__skip_msgs[] = rcube::Q($this->gettext('remote_disabled'));
                 }
                 // If remote is missing (not bundled) and not up_to_date, note missing source
                 $remote_raw = isset($r['remote']) ? (string)$r['remote'] : '';
                 $status_raw = isset($r['status']) ? strtolower((string)$r['status']) : '';
                 if (empty($r['links']['github']) && empty($r['links']['packagist']) && $status_raw !== 'bundled') {
-                    $__skip_msgs[] = 'No update source configured (no GitHub/Packagist)';
+                    $__skip_msgs[] = rcube::Q($this->gettext('no_source'));
                 }
                 if ($remote_raw === '' || $remote_raw === '—') {
-                    $__skip_msgs[] = 'No remote version found';
+                    $__skip_msgs[] = rcube::Q($this->gettext('no_remote_ver'));
                 }
                 if (!empty($__skip_msgs)) {
                     $title = rcube::Q(implode('; ', $__skip_msgs));
@@ -499,10 +499,10 @@ class plugin_manager extends rcube_plugin
 
                 $links_html = array();
                 if (!empty($r['links']['packagist'])) {
-                    $links_html[] = '<a target="_blank" rel="noreferrer" href="'.rcube::Q($r['links']['packagist']).'">Packagist</a>';
+                    $links_html[] = '<a target="_blank" rel="noreferrer" href="'.rcube::Q($r['links']['packagist']).'">' . rcube::Q($this->gettext('packagist')) . '</a>';
                 }
                 if (!empty($r['links']['github'])) {
-                    $links_html[] = '<a target="_blank" rel="noreferrer" href="'.rcube::Q($r['links']['github']).'">GitHub</a>';
+                    $links_html[] = '<a target="_blank" rel="noreferrer" href="'.rcube::Q($r['links']['github']).'">' . rcube::Q($this->gettext('github')) . '</a>';
                 }
 
                 $rowcls = ($r['status'] === $this->gettext('bundled')) ? ' class="pm-bundled"' : '';
@@ -518,7 +518,7 @@ class plugin_manager extends rcube_plugin
                         . '<td>' . rcube::Q($r['dir']) . '</td>'
                         . '<td data-sort="' . $en_sort . '">' . $en_html . '</td>'
                         . '<td>' . rcube::Q($r['local']) . '</td>'
-						. '<td>' . rcube::Q($r['remote']) . (!empty($this->last_ts) ? '<br><span class="pm-checked" title="last check at ' . rcube::Q(date('c', $this->last_ts)) . '">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '') . '</td>'
+						. '<td>' . rcube::Q($r['remote']) . '</td>'
                         . '<td>' . $st_html . '</td>'
                         . '<td>' . implode(' &middot; ', $links_html) . '</td>'
                         . '</tr>';
@@ -810,9 +810,9 @@ class plugin_manager extends rcube_plugin
         $ts = intval($ts);
         if ($ts <= 0) return '';
         $diff = time() - $ts;
-        if ($diff < 60) return 'just now';
-        if ($diff < 3600) return intval($diff/60) . ' min ago';
-        if ($diff < 86400) return intval($diff/3600) . ' hr ago';
+        if ($diff < 60) return rcube::Q($this->gettext('just_now'));
+        if ($diff < 3600) return intval($diff/60) . rcube::Q($this->gettext('min_ago'));
+        if ($diff < 86400) return intval($diff/3600) . rcube::Q($this->gettext('hr_ago'));
         return intval($diff/86400) . ' d ago';
     }
 
@@ -928,30 +928,30 @@ class plugin_manager extends rcube_plugin
         $rc = $this->rc;
         $user_id = method_exists($rc, 'get_user_id') ? intval($rc->get_user_id()) : (isset($rc->user) && isset($rc->user->ID) ? intval($rc->user->ID) : 0);
         if (!$this->is_update_admin()) {
-            $rc->output->show_message('You are not authorized to perform updates.', 'error');
+            $rc->output->show_message('' . rcube::Q($this->gettext('not_authorized')) . '.', 'error');
             $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
             return;
         }
         $plugin_dir = rcube_utils::get_input_value('_pm', rcube_utils::INPUT_GPC);
         $plugin_dir = preg_replace('~[^a-zA-Z0-9_\-]~', '', (string)$plugin_dir);
         if (!$plugin_dir) {
-            $rc->output->show_message('Missing plugin parameter.', 'error');
+            $rc->output->show_message('' . rcube::Q($this->gettext('missing_parameter')) . '.', 'error');
             $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
             return;
         }
         try {
             $ok = $this->perform_update($plugin_dir);
             if ($ok === true) {
-                $rc->output->show_message('Plugin updated successfully.', 'confirmation');
-                $rc->output->command('display_message', 'Plugin updated successfully.', 'confirmation');
+                $rc->output->show_message('' . rcube::Q($this->gettext('plugin_update_good')) . '.', 'confirmation');
+                $rc->output->command('display_message', '' . rcube::Q($this->gettext('plugin_update_good')) . '.', 'confirmation');
             } else {
                 $rc->output->show_message('Update finished: ' . rcube::Q((string)$ok), 'notice');
-                $rc->output->command('display_message', 'Update finished', 'notice');
+                $rc->output->command('display_message', '' . rcube::Q($this->gettext('udpate_finished')) . '', 'notice');
             }
         } catch (Exception $e) {
             $this->log_debug('Update error', array('plugin'=>$plugin_dir, 'err'=>$e->getMessage()));
             $rc->output->show_message('Update failed: ' . rcube::Q($e->getMessage()), 'error');
-            $rc->output->command('display_message', 'Update failed: ' . rcube::Q($e->getMessage()), 'error');
+            $rc->output->command('display_message', '' . rcube::Q($this->gettext('udpate_failed')) . ': ' . rcube::Q($e->getMessage()), 'error');
         }
         $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
     }
@@ -961,7 +961,7 @@ class plugin_manager extends rcube_plugin
         $root = $this->plugins_root_dir();
         if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
         if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
-        if (!$root) { $this->log_debug('perform_update no_root'); throw new Exception('Cannot locate plugins directory'); }
+        if (!$root) { $this->log_debug('perform_update no_root'); throw new Exception(rcube::Q($this->gettext('no_locate_dir'))); }
 
         $plugdir = $root . DIRECTORY_SEPARATOR . $dir_name;
         // backup before update
@@ -972,7 +972,7 @@ class plugin_manager extends rcube_plugin
             $this->prune_backups($dir_name);
         }
 
-        if (!is_dir($plugdir)) { throw new Exception('Plugin not found: ' . $dir_name); }
+        if (!is_dir($plugdir)) { throw new Exception('' . rcube::Q($this->gettext('plugin_not_found')) . ': ' . $dir_name); }
 
         // discover plugin sources
         $plugins = $this->discover_plugins();
@@ -1027,7 +1027,7 @@ class plugin_manager extends rcube_plugin
             }
         }
         if (!$zipurl) {
-            throw new Exception('Cannot determine download URL for ' . $dir_name);
+            throw new Exception(rcube::Q($this->gettext('no_dnld_url')) . $dir_name);
         }
 
         try {
@@ -1039,7 +1039,7 @@ class plugin_manager extends rcube_plugin
                 $data = $this->http_get2($zipurl, array('User-Agent: Roundcube-Plugin-Manager'), $status, $err);
             }
             if ($status < 200 || $status >= 300 || !$data) {
-                throw new Exception('Download failed (HTTP ' . intval($status) . ', ' . $err . ')');
+                throw new Exception(rcube::Q($this->gettext('dnld_failed')) . ' (HTTP ' . intval($status) . ', ' . $err . ')');
             }
             // Optional checksum verification (release channel)
             if ($channel === 'release') {
@@ -1047,7 +1047,7 @@ class plugin_manager extends rcube_plugin
                 catch (Exception $ve) { if ($this->cfg_true('pm_require_checksum', false)) { throw $ve; } }
             }
 
-            if (!class_exists('ZipArchive')) { throw new Exception('ZipArchive extension not available'); }
+            if (!class_exists('ZipArchive')) { throw new Exception(rcube::Q($this->gettext('zip_no_avail'))); }
             $tmpzip = $plugdir . '.update.zip';
             @file_put_contents($tmpzip, $data);
 
@@ -1086,11 +1086,11 @@ class plugin_manager extends rcube_plugin
                 try {
                     // Restore backup over the plugin dir
                     $this->recurse_copy($bak, $plugdir, array());
-                    $this->rc->output->show_message('Update failed, restored from backup: ' . rcube::Q(basename($bak)) . '. Reason: ' . rcube::Q($ex->getMessage()), 'error');
+                    $this->rc->output->show_message(rcube::Q($this->gettext('update_fail_restore')) . ': ' . rcube::Q(basename($bak)) . '. Reason: ' . rcube::Q($ex->getMessage()), 'error');
                     $this->send_webhook('update', array('plugin'=>$dir_name,'error'=>true,'restored'=>basename($bak),'reason'=>$ex->getMessage()));
                 } catch (Exception $rex) {
                     // If restore fails, include both reasons
-                    $this->rc->output->show_message('Update failed and restore failed: ' . rcube::Q($ex->getMessage()) . '; restore: ' . rcube::Q($rex->getMessage()), 'error');
+                    $this->rc->output->show_message(rcube::Q($this->gettext('update_restore_fail')) . ': ' . rcube::Q($ex->getMessage()) . '; restore: ' . rcube::Q($rex->getMessage()), 'error');
                 }
             }
             throw $ex;
@@ -1133,12 +1133,12 @@ class plugin_manager extends rcube_plugin
         $dist_text = @file_get_contents($dist);
         $cfg_text  = is_readable($cfg) ? @file_get_contents($cfg) : "<?php\n// Auto-created by plugin_manager update\n\$config = array();\n";
 
-        preg_match_all("~\\$config\\[['\\\"]([^'\\\"]+)['\\\"]\\]\\s*=~", $dist_text, $m);
+        preg_match_all('~\$config\[["\']([^"\']+)["\']\]\s*=~', $dist_text, $m);
         $keys = array_unique($m[1]);
         $missing = array();
         foreach ($keys as $k) {
-            if (!preg_match("~\\$config\\[['\\\"]" . preg_quote($k, '~') . "['\\\"]\\]\\s*=~", $cfg_text)) {
-                if (preg_match("~(\\$config\\[['\\\"]" . preg_quote($k, '~') . "['\\\"]\\]\\s*=.*?;)~s", $dist_text, $mm)) {
+            if (!preg_match('~\$config\[["\']' . preg_quote($k, '~') . '["\']\]\s*=~', $cfg_text)) {
+                if (preg_match('~(\$config\[["\']' . preg_quote($k, '~') . '["\']\]\s*=.*?;)~s', $dist_text, $mm)) {
                     $missing[] = trim($mm[1]);
                 }
             }
@@ -1183,7 +1183,7 @@ class plugin_manager extends rcube_plugin
         if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
         if (!$root) { throw new Exception('Cannot locate plugins directory'); }
         $plugdir = $root . DIRECTORY_SEPARATOR . $dir_name;
-        if (!is_dir($plugdir)) { throw new Exception('Plugin not found: ' . $dir_name); }
+        if (!is_dir($plugdir)) { throw new Exception(rcube::Q($this->gettext('plugin_not_found')) . ': ' . $dir_name); }
 
         $parent = dirname($plugdir);
         $prefix = basename($plugdir) . '.bak-';
@@ -1196,7 +1196,7 @@ class plugin_manager extends rcube_plugin
                 if ($m > $latest_m) { $latest_m = $m; $latest = $p; }
             }
         }
-        if (!$latest) { throw new Exception('No backup found'); }
+        if (!$latest) { throw new Exception(rcube::Q($this->gettext('no_backup_found'))); }
         $this->recurse_copy($latest, $plugdir, array());
         return basename($latest);
     }

@@ -12,8 +12,6 @@ Lists installed plugins, shows local vs latest versions, and highlights **Update
 - Diagnostics panel for connectivity
 - `sources.map.php` to resolve outliers or mark plugins as **bundled**
 - Scroll-friendly UI for large lists
-- Single or Multiple plugin updates
-- Restore from Backup (note)
 
 
 # Install
@@ -65,5 +63,4 @@ $config['pm_hidden_plugins'] = array('zipdownload', 'managesieve');
 ```
 This only affects display in the manager; it does **not** enable/disable the plugin itself.
 
-![Alt text](/images/plugin-manager-screenshot.png?raw=true "Plugin Manager Screenshot Up to Date")
-![Alt text](/images/plugin-manager-screenshot-update.png?raw=true "Plugin Manager Screenshot with and Update peding")
+![Alt text](/images/plugin-manager-screenshot.png?raw=true "Plugin Manager Screenshot")
