@@ -9,6 +9,9 @@ $config['pm_cache_ttl'] = 43200;              // remote check cache TTL (seconds
 $config['pm_plugin_root'] = null;             // override plugins root dir (null = auto)
 $config['pm_update_channel'] = 'release';     // 'release' or 'dev'
 
+// ===== Bulk update =====
+$config['pm_enable_update_all'] = true;       // show top-level "Update All" button
+
 // Map specific plugin dirs to GitHub repos (owner/repo or full URL)
 $config['pm_sources_map'] = [
   // 'account_details' => 'https://github.com/owner/repo',
@@ -21,28 +24,27 @@ $config['pm_github_token'] = '';              // e.g. 'ghp_xxxxx...'
 $config['pm_hide_bak'] = true;
 
 // ===== Admins =====
+$config['pm_visibility'] = 'admin_only'; 	  // 'admin_only' or 'mixed' (default)
 $config['pm_update_admins'] = [1];            // only these Roundcube user IDs see Update/Restore/Bulk
 
 // ===== UI niceties =====
 $config['pm_column_widths'] = [
   'local'  => '8%',
-  'latest' => '8%',
+  'latest' => '10%',
   'status' => '20%',
 ];
 
 // ===== Backups & retention =====
 $config['pm_backups'] = true;                 // create .bak-YYYYmmdd-HHMMSS before updating
+$config['pm_auto_rollback'] = true;           // auto-restore last backup if update throws
 $config['pm_keep_backups'] = 3;               // keep newest N backups per plugin (set <1 for unlimited)
 $config['pm_backups_max_age_days'] = 90;      // also delete backups older than N days (0 disables)
 
-// ===== Bulk update =====
-$config['pm_enable_update_all'] = true;       // show top-level "Update All" button
-
 // ===== Email alerts (lazy cron) =====
 $config['pm_notify_enabled'] = true;
-$config['pm_notify_recipients'] = ['admin@domain.net'];
-$config['pm_notify_from'] = 'admin@domain.net';
-$config['pm_notify_interval_hours'] = 12;
+$config['pm_notify_recipients'] = ['email@domain.net'];
+$config['pm_notify_from'] = 'email@domain.net';
+$config['pm_notify_interval_hours'] = 3;
 
 // ===== Policies: pins & ignore (scoped) =====
 $config['pm_features_enabled'] = true;        // master switch for optional features
@@ -74,7 +76,7 @@ $config['pm_checksum_asset_regex'] = '/(sha256|checksums).*\.(txt|sha256)$/i';
 
 // ===== Hidden plugins (do not show in UI) =====
 // Names must match plugin directory names (case-insensitive).
-// Pre-fill with Roundcube core plugins you might not want managed here.
+// Pre-fill with Roundcube core plugins you might not want managed here. These are taken care of by the Roundcube team.
 $config['pm_hidden_plugins'] = array(
     'acl',
     'additional_message_headers',
@@ -101,6 +103,7 @@ $config['pm_hidden_plugins'] = array(
     'new_user_dialog',
     'new_user_identity',
     'password',
+    'plugin_manager',
     'reconnect',
     'redundant_attachments',
     'show_additional_headers',

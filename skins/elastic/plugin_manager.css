@@ -1,3 +1,50 @@
+/* === Plugin Manager: enforce custom icon in Settings menu === */
+
+/* Fallback selector in case class assignment varies across skins */
+a[href*="_action=plugin.plugin_manager"] .icon {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: 22px 22px !important;
+}
+
+
+/* Elastic skin: Roundcube uses masked SVG icons; disable mask and use our bitmap instead */
+a.listitem.plugin_manager .icon,
+.listitem.plugin_manager .icon,
+a.plugin_manager .icon,
+li.plugin_manager > a > .icon,
+.icon.plugin_manager {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-size: 22px 22px !important;
+  opacity: 1 !important;
+}
+
+/* Default/inactive icon */
+a.listitem.plugin_manager .icon,
+.listitem.plugin_manager .icon,
+a.plugin_manager .icon,
+li.plugin_manager > a > .icon {
+  background-image: url('./images/pm_link_inactive.png') !important;
+}
+
+/* Active/hovered/selected state icon */
+a.listitem.plugin_manager.selected .icon,
+a.listitem.plugin_manager:focus .icon,
+a.listitem.plugin_manager:hover .icon,
+.listitem.plugin_manager.selected .icon,
+.listitem.plugin_manager:focus .icon,
+.listitem.plugin_manager:hover .icon,
+li.plugin_manager > a.selected > .icon,
+li.plugin_manager > a:focus > .icon,
+li.plugin_manager > a:hover > .icon {
+  background-image: url('./images/pm_link_active.png') !important;
+}
+
 /* Base table behavior */
 .records-table#pm-table td,
 .records-table#pm-table th { white-space: nowrap; }

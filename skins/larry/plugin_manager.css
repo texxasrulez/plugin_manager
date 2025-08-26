@@ -1,3 +1,49 @@
+/* === Plugin Manager: enforce custom icon in Settings menu === */
+
+/* Fallback selector in case class assignment varies across skins */
+a[href*="_action=plugin.plugin_manager"] .icon {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: 22px 22px !important;
+}
+
+
+/* Larry skin family: apply bitmap to the settings tab link */
+#settings-sections a.plugin_manager,
+#settings-sections li.plugin_manager > a,
+a.listitem.plugin_manager,
+li.plugin_manager > a {
+  background-image: url('./images/plugin_manager.png') !important;
+  background-repeat: no-repeat !important;
+  background-position: 8px center !important;
+  background-size: 22px 22px !important;
+  padding-left: 36px; /* ensure text doesn't overlap the icon */
+}
+
+/* Active/hover/selected state */
+#settings-sections a.plugin_manager.selected,
+#settings-sections li.plugin_manager.selected > a,
+a.listitem.plugin_manager.selected,
+a.listitem.plugin_manager:focus,
+a.listitem.plugin_manager:hover,
+li.plugin_manager > a.selected,
+li.plugin_manager > a:focus,
+li.plugin_manager > a:hover {
+  background-image: url('./images/plugin_manager_act.png') !important;
+}
+
+/* Fallback: if the icon span exists, ensure it shows the bitmap */
+a.plugin_manager .icon,
+li.plugin_manager > a > .icon,
+.icon.plugin_manager {
+  background-image: url('./images/plugin_manager.png') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: 22px 22px !important;
+}
+
 .records-table#pm-table td, .records-table#pm-table th { white-space: nowrap; }
 .records-table#pm-table td:nth-child(1) { white-space: normal; }
 

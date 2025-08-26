@@ -29,7 +29,7 @@ $labels['packagist'] = 'Imballatore';
 $labels['github'] = 'GitHub';
 $labels['pm_yes'] = 'Sì';
 $labels['pm_no'] = 'No';
-$labels['refresh_versions'] = 'Aggiornare le versioni';
+$labels['refresh_versions'] = 'Verifica degli aggiornamenti';
 $labels['last_checked'] = 'Ultimo controllo';
 $labels['reload_page'] = 'Ricarica la pagina';
 $labels['diagnostics'] = 'Diagnostica';
@@ -69,7 +69,7 @@ $labels['update_fail_restore'] = 'Aggiornamento fallito, ripristinato dal backup
 $labels['update_restore_fail'] = 'Aggiornamento non riuscito e ripristino non riuscito';
 $labels['no_backup_found'] = 'Nessun backup trovato';
 $labels['bulk_update_complete'] = 'Aggiornamento completo';
-$labels['just_now'] = ' Solo ora';
+$labels['just_now'] = ' Proprio ora';
 $labels['min_ago'] = ' min fa';
 $labels['hr_ago'] = ' ora fa';
 ?>

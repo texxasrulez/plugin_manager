@@ -33,6 +33,8 @@ class plugin_manager extends rcube_plugin
     private $gh_token = '';
     private $hidden_plugins = array();
 
+    private $visibility = 'mixed'; // 'mixed' or 'admin_only'
+
     // --- Simple flash message persistence across redirects (works in all skins) ---
     private function flash_add($message, $type = 'notice')
     {
@@ -73,7 +75,12 @@ class plugin_manager extends rcube_plugin
             $this->register_handler('plugin.body', array($this, 'render_page'));
         }
 
-        // Early handler registration so templates always resolve
+        
+        // Ensure our styles are always available anywhere in the Settings task (for the menu icon)
+        if ($rcmail->task === 'settings') {
+            $this->include_stylesheet($this->local_skin_path() . '/plugin_manager.css');
+        }
+    // Early handler registration so templates always resolve
         $this->log_debug('init current action', array('action'=>rcube_utils::get_input_value('_action', rcube_utils::INPUT_GPC)));
 
         $this->add_hook('settings_actions', array($this, 'settings_actions'));
@@ -101,6 +108,7 @@ class plugin_manager extends rcube_plugin
         $this->debug         = (bool)$this->config->get('pm_debug', false) || isset($_GET['_pm_debug']);
         $this->diag          = isset($_GET['_pm_diag']);
         $this->gh_token      = (string)$this->config->get('pm_github_token', '');
+        $this->visibility    = (string)$this->config->get('pm_visibility', 'mixed');
         $this->hidden_plugins = array();
         $hp = $this->config->get('pm_hidden_plugins', array());
         if (!is_array($hp)) { $hp = array($hp); }
@@ -124,13 +132,18 @@ class plugin_manager extends rcube_plugin
 
     function settings_actions($args)
     {
-        $args['actions'][] = array(
-            'action' => 'plugin.plugin_manager',
-            'label'  => 'plugin_manager.plugin_manager_title',
-            'domain' => 'plugin.plugin_manager',
-            'class'  => 'plugin.plugin_manager',
-        );
-        return $args;
+                // Respect visibility policy
+        if (!$this->can_view()) { return $args; }
+        
+$args['actions'][] = array(
+    'command' => 'plugin.plugin_manager',
+        'action'  => 'plugin.plugin_manager',
+    'type'    => 'link',
+    'label'   => 'plugin_manager.plugin_manager_title',
+    'title'   => 'plugin_manager.plugin_manager_title',
+    'class'   => 'plugin_manager',
+);
+return $args;
     }
 
     function action_toggle_remote()
@@ -299,6 +312,13 @@ class plugin_manager extends rcube_plugin
 				}
 				</style>');
             $this->rc->output->add_header('<style>.pm-checked { color: #666; font-size: 90%; }</style>');
+$this->rc->output->add_header('<style>
+  /* Subtle zebra striping: 10% white so skin bg bleeds through */
+  #pm-table tbody tr:nth-child(even) td { background-color: rgba(255,255,255,0.10); }
+  #pm-table tbody tr:nth-child(even):hover td { background-color: rgba(255,255,255,0.14); }
+</style>');
+
+            $this->rc->output->add_header('<style>.pm-busy{opacity:.65;pointer-events:none;}</style>');
             $this->rc->output->add_header('<style>.pm-skip-hint { margin-left:6px; cursor:help; font-weight:bold; } .pm-skip-hint:hover { filter: brightness(0.85); }</style>');
 
             $this->log_debug('render_page start');
@@ -358,8 +378,9 @@ class plugin_manager extends rcube_plugin
 
             $h = array();
             $h[] = '<div class="box">';
-            $h[] = '<h2>&nbsp;&nbsp;' . rcube::Q($this->gettext('plugin_manager_title')) . '</h2>';
-            $h[] = '<p>&nbsp;&nbsp;&nbsp;&nbsp;' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
+$h[] = '<div class="boxtitle">' . rcube::Q($this->gettext('plugin_manager_title')) . '</div>';
+$h[] = '<div class="boxcontent">';
+$h[] = '<p class="pm-desc">' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
             if (!$this->remote_checks) {
                 $u = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>1));
                 $h[] = '&nbsp;&nbsp;<strong><div class="remote-off">' . rcube::Q($this->gettext('remote_off_notice')) . '</div></strong>';
@@ -367,7 +388,8 @@ class plugin_manager extends rcube_plugin
 
             if ($this->diag) {
                 $h[] = '<div class="box propform">';
-                $h[] = '<h3>&nbsp;&nbsp;&nbsp;' . rcube::Q($this->gettext('conn_diag')) . '</h3>';
+$h[] = '<div class="boxtitle">' . rcube::Q($this->gettext('conn_diag')) . '</div>';
+$h[] = '<div class="boxcontent">';
                 $ok = array(); $msgs = array();
                 // Packagist test
                 $st=0;$er=null; $this->http_get2('https://repo.packagist.org/p2/roundcube/roundcubemail.json', array(), $st, $er);
@@ -385,11 +407,11 @@ class plugin_manager extends rcube_plugin
             }
             $h[] = '<div style="margin:8px 0;">';
 
-            $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager')) . '">' . rcube::Q($this->gettext('reload_page')) . '</a> ' .
-                   '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1)) . '">' . rcube::Q($this->gettext('diagnostics')) . '</a> ';
+            $h[] = '<a class="button pm-reload" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager')) . '" onclick="this.textContent=\'Reloading ...\'; this.classList.add(\'pm-busy\'); this.setAttribute(\'aria-busy\',\'true\'); return true;">' . rcube::Q($this->gettext('reload_page')) . '</a> ' .
+                   '<a class="button pm-diagnostics" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1)) . '" onclick="this.textContent=\'Running ...\'; this.classList.add(\'pm-busy\'); this.setAttribute(\'aria-busy\',\'true\'); return true;">' . rcube::Q($this->gettext('diagnostics')) . '</a> ';
             $toggle_label = $this->remote_checks ? $this->gettext('disable_remote') : $this->gettext('enable_remote');
             $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>($this->remote_checks?0:1))) . '">' . rcube::Q($toggle_label) . '</a>' .
-                   ' <a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '">' . rcube::Q($this->gettext('refresh_versions')) . '</a>&nbsp;&nbsp;<span class="pm-lastupdate" style="margin:6px 0 4px 0;">' . rcube::Q($this->gettext('last_checked')) . ':&nbsp;' . ( $this->last_ts ? '<span class="pm-checked">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '<span class="pm-checked">'. rcube::Q($this->gettext('never')) .'</span>' ) . '</div>';
+                   ' <a class="button pm-refresh" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '" onclick="this.textContent=\'Checking ...\'; this.classList.add(\'pm-busy\'); this.setAttribute(\'aria-busy\',\'true\'); return true;">' . rcube::Q($this->gettext('refresh_versions')) . '</a>&nbsp;&nbsp;<span class="pm-lastupdate" style="margin:6px 0 4px 0;">' . rcube::Q($this->gettext('last_checked')) . ':&nbsp;' . ( $this->last_ts ? '<span class="pm-checked">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '<span class="pm-checked">'. rcube::Q($this->gettext('never')) .'</span>' ) . '</div>';
             $h[] = '</div>';
             $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
 
@@ -398,7 +420,7 @@ class plugin_manager extends rcube_plugin
                 $btn  = '<div class="pm-bulkbar" style="margin:10px 0;">';
                 $btn .= '<a class="button pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1"';
                 $btn .= ' onclick="if(!confirm(&quot; '. rcube::Q($this->gettext('update_all_ood')) . '?&quot;)) return false; this.textContent=&quot;'. rcube::Q($this->gettext('update_all')) . '...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">';
-                $btn .= rcube::Q($this->gettext('updateall')) . ' <span class="pm-badge" style="margin-left:8px;padding:2px 7px;border-radius:10px;font-size:85%;display:inline-block;">' . $eligible . '</span>';
+                $btn .= rcube::Q($this->gettext('updateall')) . ' <span class="pm-badge" style="margin-left:8px;padding:2px 7px;border-radius:10px;font-size:85%;display:inline-block;"><strong>' . $eligible . '</strong></span>';
                 $btn .= '</a>';
                 $btn .= ' <a class="button pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1&_pm_dry=1"';
                 $btn .= ' onclick="this.textContent=\'' .rcube::Q($this->gettext('testing_update')) . ' ...\'; this.style.pointerEvents=\'none\'; return true;">';
@@ -416,7 +438,7 @@ class plugin_manager extends rcube_plugin
                 . '<th class="pm-sort" data-type="semver">' . rcube::Q($this->gettext('version_local')) . '</th>'
                 . '<th class="pm-sort" data-type="semver">' . rcube::Q($this->gettext('version_remote')) . '</th>'
                 . '<th class="pm-sort" data-type="text">' . rcube::Q($this->gettext('status')) . '</th>'
-                . '<th class="pm-sort" data-type="text">' . rcube::Q($this->gettext('actions')) . '</th>'
+                . '<th class="pm-sort" data-type="text">' . rcube::Q($this->gettext('websites')) . '</th>'
                 . '</tr></thead><tbody>';
 
             foreach ($rows as $r) {
@@ -1150,7 +1172,17 @@ class plugin_manager extends rcube_plugin
         }
     }
 
-    private function is_update_admin()
+    
+private function can_view()
+{
+    // mixed = everyone can view (existing behavior), admin_only = only admins can view
+    if ($this->visibility === 'admin_only') {
+        return $this->is_update_admin();
+    }
+    return true;
+}
+
+private function is_update_admin()
     {
         $uid = method_exists($this->rc, 'get_user_id') ? intval($this->rc->get_user_id()) : (isset($this->rc->user) && isset($this->rc->user->ID) ? intval($this->rc->user->ID) : 0);
         $admins = (array)$this->config->get('pm_update_admins', array(1));
@@ -1230,7 +1262,7 @@ class plugin_manager extends rcube_plugin
             $d = basename($p['dir']);
             if (stripos($d, '.bak') !== false) continue;
             $remote = isset($p['remote']) ? (string)$p['remote'] : '';
-            $local  = isset($p['local'])  ? (string)$p['local']  : '';
+            $local  = isset($p['local'])  ? (string)$p['local'] : '';
             if ($remote === '' || $remote === '—') continue;
             if ($this->compare_versions($local, $remote) < 0 && empty($pol['pinned']) && empty($pol['ignored']['notify'])) {
                 $needs[] = array(
