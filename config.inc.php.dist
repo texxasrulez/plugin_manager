@@ -10,7 +10,7 @@ $config['pm_plugin_root'] = null;             // override plugins root dir (null
 $config['pm_update_channel'] = 'release';     // 'release' or 'dev'
 
 // ===== Bulk update =====
-$config['pm_enable_update_all'] = true;       // show top-level "Update All" button
+$config['pm_enable_update_select'] = true;       // show top-level "Update Selected" button
 
 // Map specific plugin dirs to GitHub repos (owner/repo or full URL)
 $config['pm_sources_map'] = [

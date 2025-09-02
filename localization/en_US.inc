@@ -1,7 +1,7 @@
 <?php
 $labels = [
   'plugin_manager_title' => 'Plugin Manager',
-  'plugin_manager_desc'  => 'Inspects installed Roundcube plugins and check for updates.',
+  'plugin_manager_desc'  => 'Plugin Manager inspects plugins for updates, installs them and can restore if needed.',
   'plugin'               => 'Plugin',
   'directory'            => 'Directory',
   'enabled'              => 'Enabled',

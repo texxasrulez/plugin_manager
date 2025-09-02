@@ -65,6 +65,12 @@ class plugin_manager extends rcube_plugin
 
     function init()
     {
+        // include UI helpers JS on settings page
+        $rcmail = rcmail::get_instance();
+        if ($rcmail->task === 'settings' && ($rcmail->action === 'plugin.plugin_manager' || $rcmail->action === 'preferences')) {
+            $this->include_script('plugin_manager.ui.js');
+        }
+        
         $this->rc = rcube::get_instance();
         $this->pm_load_config();
         $this->maybe_send_update_alert();
@@ -75,7 +81,6 @@ class plugin_manager extends rcube_plugin
             $this->register_handler('plugin.body', array($this, 'render_page'));
         }
 
-        
         // Ensure our styles are always available anywhere in the Settings task (for the menu icon)
         if ($rcmail->task === 'settings') {
             $this->include_stylesheet($this->local_skin_path() . '/plugin_manager.css');
@@ -181,7 +186,7 @@ return $args;
     function action_list()
     {
         // Inline bulk update (config-gated)
-        if ($this->cfg_true('pm_enable_update_all', true) && $this->is_update_admin()) {
+        if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
             $pm_all = rcube_utils::get_input_value('_pm_update_all', rcube_utils::INPUT_GPC);
             $pm_dry = rcube_utils::get_input_value('_pm_dry', rcube_utils::INPUT_GPC) ? true : false;
             $this->log_debug('bulk_handler', array('where'=>'action_list', 'pm_all'=>$pm_all, 'pm_dry'=>$pm_dry));
@@ -271,7 +276,7 @@ return $args;
         }
 
         $this->log_debug('update_all_trigger', array('pm_all'=>$pm_all, 'pm_dry'=>$pm_dry, 'where'=>'detect'));
-        if ($pm_all && $this->cfg_true('pm_enable_update_all', true) && $this->is_update_admin()) {
+        if ($pm_all && $this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
             // Do the same as action_list path just in case the template gets here first
             $this->log_debug('bulk_handler', array('where'=>'render_page'));
             $res = $this->update_all_outdated($pm_dry);
@@ -312,11 +317,11 @@ return $args;
 				}
 				</style>');
             $this->rc->output->add_header('<style>.pm-checked { color: #666; font-size: 90%; }</style>');
-$this->rc->output->add_header('<style>
-  /* Subtle zebra striping: 10% white so skin bg bleeds through */
-  #pm-table tbody tr:nth-child(even) td { background-color: rgba(255,255,255,0.10); }
-  #pm-table tbody tr:nth-child(even):hover td { background-color: rgba(255,255,255,0.14); }
-</style>');
+			$this->rc->output->add_header('<style>
+			  /* Subtle zebra striping: 10% white so skin bg bleeds through */
+			  #pm-table tbody tr:nth-child(even) td { background-color: rgba(255,255,255,0.10); }
+			  #pm-table tbody tr:nth-child(even):hover td { background-color: rgba(255,255,255,0.14); }
+			</style>');
 
             $this->rc->output->add_header('<style>.pm-busy{opacity:.65;pointer-events:none;}</style>');
             $this->rc->output->add_header('<style>.pm-skip-hint { margin-left:6px; cursor:help; font-weight:bold; } .pm-skip-hint:hover { filter: brightness(0.85); }</style>');
@@ -378,9 +383,9 @@ $this->rc->output->add_header('<style>
 
             $h = array();
             $h[] = '<div class="box">';
-$h[] = '<div class="boxtitle">' . rcube::Q($this->gettext('plugin_manager_title')) . '</div>';
-$h[] = '<div class="boxcontent">';
-$h[] = '<p class="pm-desc">' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
+			$h[] = '<div class="boxtitle">' . rcube::Q($this->gettext('plugin_manager_title')) . '</div>';
+			$h[] = '<div class="boxcontent">';
+			$h[] = '<p class="pm-desc">' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
             if (!$this->remote_checks) {
                 $u = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>1));
                 $h[] = '&nbsp;&nbsp;<strong><div class="remote-off">' . rcube::Q($this->gettext('remote_off_notice')) . '</div></strong>';
@@ -388,8 +393,8 @@ $h[] = '<p class="pm-desc">' . rcube::Q($this->gettext('plugin_manager_desc')) .
 
             if ($this->diag) {
                 $h[] = '<div class="box propform">';
-$h[] = '<div class="boxtitle">' . rcube::Q($this->gettext('conn_diag')) . '</div>';
-$h[] = '<div class="boxcontent">';
+				$h[] = '<div class="boxtitle">' . rcube::Q($this->gettext('conn_diag')) . '</div>';
+				$h[] = '<div class="boxcontent">';
                 $ok = array(); $msgs = array();
                 // Packagist test
                 $st=0;$er=null; $this->http_get2('https://repo.packagist.org/p2/roundcube/roundcubemail.json', array(), $st, $er);
@@ -412,20 +417,12 @@ $h[] = '<div class="boxcontent">';
             $toggle_label = $this->remote_checks ? $this->gettext('disable_remote') : $this->gettext('enable_remote');
             $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>($this->remote_checks?0:1))) . '">' . rcube::Q($toggle_label) . '</a>' .
                    ' <a class="button pm-refresh" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '" onclick="this.textContent=\'Checking ...\'; this.classList.add(\'pm-busy\'); this.setAttribute(\'aria-busy\',\'true\'); return true;">' . rcube::Q($this->gettext('refresh_versions')) . '</a>&nbsp;&nbsp;<span class="pm-lastupdate" style="margin:6px 0 4px 0;">' . rcube::Q($this->gettext('last_checked')) . ':&nbsp;' . ( $this->last_ts ? '<span class="pm-checked">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '<span class="pm-checked">'. rcube::Q($this->gettext('never')) .'</span>' ) . '</div>';
-            $h[] = '</div>';
             $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
 
-            if ($this->cfg_true('pm_enable_update_all', true) && $this->is_update_admin()) {
+            if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
                 $eligible = (int)$this->eligible_count();
                 $btn  = '<div class="pm-bulkbar" style="margin:10px 0;">';
-                $btn .= '<a class="button pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1"';
-                $btn .= ' onclick="if(!confirm(&quot; '. rcube::Q($this->gettext('update_all_ood')) . '?&quot;)) return false; this.textContent=&quot;'. rcube::Q($this->gettext('update_all')) . '...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">';
-                $btn .= rcube::Q($this->gettext('updateall')) . ' <span class="pm-badge" style="margin-left:8px;padding:2px 7px;border-radius:10px;font-size:85%;display:inline-block;"><strong>' . $eligible . '</strong></span>';
-                $btn .= '</a>';
-                $btn .= ' <a class="button pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1&_pm_dry=1"';
-                $btn .= ' onclick="this.textContent=\'' .rcube::Q($this->gettext('testing_update')) . ' ...\'; this.style.pointerEvents=\'none\'; return true;">';
-                $btn .= rcube::Q($this->gettext('test_update'));
-                $btn .= '</a></div>';
+                $btn .= '</div>';
                 $h[] = $btn;
             }
 
@@ -444,7 +441,7 @@ $h[] = '<div class="boxcontent">';
             foreach ($rows as $r) {
                 // Precompute optional Update All anchor (config-gated)
                 $uall_html = '';
-                if ($this->cfg_true('pm_enable_update_all', true) && $this->is_update_admin()) {
+                if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
                     $uall_html = ' <a class="pm-update-all" href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1" onclick="this.textContent=&quot;' . rcube::Q($this->gettext('updating_all')) .  '...&quot;; this.style.pointerEvents=&quot;none&quot;; return true;">[' . rcube::Q($this->gettext('update')) . ']</a>';
                 }
 
@@ -548,93 +545,93 @@ $h[] = '<div class="boxcontent">';
 
             $h[] = '</tbody></table>';
             $h[] = '<script>
-		(function(){
-		  var table = document.getElementById("pm-table");
-		  if (!table) return;
-		  function cellText(cell){ return (cell && (cell.textContent || cell.innerText) || "").trim(); }
-		  function parseSemver(v){
-			v = (v||"").trim();
-			if (!v || v === "—") return {k:[-1]};
-			// Handle "unknown" (translated or not): treat as lowest
-			var low = ["unknown","unk","?"];
-			var vl = v.toLowerCase();
-			for (var i=0;i<low.length;i++){ if (vl.indexOf(low[i]) !== -1) return {k:[-1]}; }
-			// strip leading v
-			v = v.replace(/^v/i,"");
-			// split by non-alphanum to capture digits and lex parts (e.g., -alpha)
-			var parts = v.split(/[^0-9a-zA-Z]+/).filter(Boolean);
-			var nums = [];
-			for (var j=0;j<parts.length;j++){
-			  var p = parts[j];
-			  if (/^\d+$/.test(p)) nums.push(parseInt(p,10));
-			  else {
-				// pre-release tags sort lower than any numeric patch
-				nums.push(-0.5);
+			(function(){
+			  var table = document.getElementById("pm-table");
+			  if (!table) return;
+			  function cellText(cell){ return (cell && (cell.textContent || cell.innerText) || "").trim(); }
+			  function parseSemver(v){
+				v = (v||"").trim();
+				if (!v || v === "—") return {k:[-1]};
+				// Handle "unknown" (translated or not): treat as lowest
+				var low = ["unknown","unk","?"];
+				var vl = v.toLowerCase();
+				for (var i=0;i<low.length;i++){ if (vl.indexOf(low[i]) !== -1) return {k:[-1]}; }
+				// strip leading v
+				v = v.replace(/^v/i,"");
+				// split by non-alphanum to capture digits and lex parts (e.g., -alpha)
+				var parts = v.split(/[^0-9a-zA-Z]+/).filter(Boolean);
+				var nums = [];
+				for (var j=0;j<parts.length;j++){
+				  var p = parts[j];
+				  if (/^\d+$/.test(p)) nums.push(parseInt(p,10));
+				  else {
+					// pre-release tags sort lower than any numeric patch
+					nums.push(-0.5);
+				  }
+				}
+				return {k:nums, raw:v};
 			  }
-			}
-			return {k:nums, raw:v};
-		  }
-		  function cmpCells(aCell,bCell,type){
-			if (type==="bool"){
-			  var av = parseInt(aCell.getAttribute("data-sort") || "0",10);
-			  var bv = parseInt(bCell.getAttribute("data-sort") || "0",10);
-			  return av - bv;
-			}
-			if (type==="semver"){
-			  var sa = parseSemver(cellText(aCell)).k, sb = parseSemver(cellText(bCell)).k;
-			  var n = Math.max(sa.length, sb.length);
-			  for (var i=0;i<n;i++){
-				var ai = (i<sa.length)?sa[i]:0, bi=(i<sb.length)?sb[i]:0;
-				if (ai !== bi) return ai - bi;
+			  function cmpCells(aCell,bCell,type){
+				if (type==="bool"){
+				  var av = parseInt(aCell.getAttribute("data-sort") || "0",10);
+				  var bv = parseInt(bCell.getAttribute("data-sort") || "0",10);
+				  return av - bv;
+				}
+				if (type==="semver"){
+				  var sa = parseSemver(cellText(aCell)).k, sb = parseSemver(cellText(bCell)).k;
+				  var n = Math.max(sa.length, sb.length);
+				  for (var i=0;i<n;i++){
+					var ai = (i<sa.length)?sa[i]:0, bi=(i<sb.length)?sb[i]:0;
+					if (ai !== bi) return ai - bi;
+				  }
+				  return 0;
+				}
+				// default text, natural-ish compare (case-insensitive)
+				var a = cellText(aCell).toLowerCase(), b = cellText(bCell).toLowerCase();
+				if (a === b) return 0;
+				return a > b ? 1 : -1;
 			  }
-			  return 0;
-			}
-			// default text, natural-ish compare (case-insensitive)
-			var a = cellText(aCell).toLowerCase(), b = cellText(bCell).toLowerCase();
-			if (a === b) return 0;
-			return a > b ? 1 : -1;
-		  }
-		  var thead = table.tHead;
-		  if (!thead) return;
-		  var headers = thead.rows[0].cells;
-		  var tbody = table.tBodies[0];
-		  function clearSortIndicators(){
-			for (var i=0;i<headers.length;i++){
-			  headers[i].removeAttribute("aria-sort");
-			  headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");
-			}
-		  }
-		  function sortBy(colIndex, type, dir){
-			var rows = Array.prototype.slice.call(tbody.rows);
-			rows.sort(function(r1,r2){
-			  var c1 = r1.cells[colIndex]||document.createElement("td");
-			  var c2 = r2.cells[colIndex]||document.createElement("td");
-			  var c = cmpCells(c1,c2,type);
-			  return dir==="asc" ? c : -c;
-			});
-			var frag = document.createDocumentFragment();
-			rows.forEach(function(r){ frag.appendChild(r); });
-			tbody.appendChild(frag);
-			clearSortIndicators();
-			headers[colIndex].setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
-			headers[colIndex].classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");
-		  }
-		  var state = {col: null, dir: "asc"};
-		  for (let i=0;i<headers.length;i++){
-			let th = headers[i];
-			if (!th.classList.contains("pm-sort")) continue;
-			th.style.cursor = "pointer";
-			th.setAttribute("role","button");
-			th.addEventListener("click", function(){
-			  var type = th.getAttribute("data-type") || "text";
-			  if (state.col === i){ state.dir = (state.dir==="asc"?"desc":"asc"); }
-			  else { state.col = i; state.dir = "asc"; }
-			  sortBy(i, type, state.dir);
-			});
-		  }
-		})();</script>';
+			  var thead = table.tHead;
+			  if (!thead) return;
+			  var headers = thead.rows[0].cells;
+			  var tbody = table.tBodies[0];
+			  function clearSortIndicators(){
+				for (var i=0;i<headers.length;i++){
+				  headers[i].removeAttribute("aria-sort");
+				  headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");
+				}
+			  }
+			  function sortBy(colIndex, type, dir){
+				var rows = Array.prototype.slice.call(tbody.rows);
+				rows.sort(function(r1,r2){
+				  var c1 = r1.cells[colIndex]||document.createElement("td");
+				  var c2 = r2.cells[colIndex]||document.createElement("td");
+				  var c = cmpCells(c1,c2,type);
+				  return dir==="asc" ? c : -c;
+				});
+				var frag = document.createDocumentFragment();
+				rows.forEach(function(r){ frag.appendChild(r); });
+				tbody.appendChild(frag);
+				clearSortIndicators();
+				headers[colIndex].setAttribute("aria-sort", dir === "asc" ? "ascending" : "descending");
+				headers[colIndex].classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");
+			  }
+			  var state = {col: null, dir: "asc"};
+			  for (let i=0;i<headers.length;i++){
+				let th = headers[i];
+				if (!th.classList.contains("pm-sort")) continue;
+				th.style.cursor = "pointer";
+				th.setAttribute("role","button");
+				th.addEventListener("click", function(){
+				  var type = th.getAttribute("data-type") || "text";
+				  if (state.col === i){ state.dir = (state.dir==="asc"?"desc":"asc"); }
+				  else { state.col = i; state.dir = "asc"; }
+				  sortBy(i, type, state.dir);
+				});
+			  }
+			})();</script>';
 
-            $h[] = '</div>';
+            $h[] = '</div></div>';
             $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
             $h[] = '</div>';
             $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
@@ -907,6 +904,11 @@ $h[] = '<div class="boxcontent">';
         if (function_exists('curl_init')) {
             $ch = curl_init();
             curl_setopt_array($ch, array(
+    CURLOPT_PROTOCOLS => (defined('CURLPROTO_HTTPS') ? CURLPROTO_HTTPS : 3),
+    CURLOPT_REDIR_PROTOCOLS => (defined('CURLPROTO_HTTPS') ? CURLPROTO_HTTPS : 3),
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2,
+    CURLOPT_USERAGENT => isset($this->http_user_agent) ? $this->http_user_agent : 'Roundcube-Plugin-Manager/1.0',
                 CURLOPT_URL => $url,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
@@ -1172,7 +1174,6 @@ $h[] = '<div class="boxcontent">';
         }
     }
 
-    
 private function can_view()
 {
     // mixed = everyone can view (existing behavior), admin_only = only admins can view
@@ -1621,4 +1622,174 @@ private function is_update_admin()
         }
         return $eligible;
     }
+
+	// === HTTP cache (ETag/Last-Modified) ===
+	private function pm_cache_path() {
+		$rc = rcmail::get_instance();
+		$dir = $rc->config->get('temp_dir', sys_get_temp_dir());
+		return rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'pm_http_cache.json';
+	}
+	private function pm_http_cache_get($url, $ttl = null) {
+		$ttl = $ttl !== null ? $ttl : (int)$this->config->get('pm_http_cache_ttl', 43200);
+		$f = $this->pm_cache_path();
+		if (!file_exists($f)) return null;
+		$raw = @file_get_contents($f);
+		if ($raw === false) return null;
+		$j = json_decode($raw, true);
+		if (!$j || !isset($j[$url])) return null;
+		$e = $j[$url];
+		if (!isset($e['ts']) || (time() - (int)$e['ts']) > $ttl) return $e; // stale but still usable for revalidation
+		return $e + ['fresh' => true];
+	}
+	private function pm_http_cache_put($url, $payload, $headers) {
+		$f = $this->pm_cache_path();
+		$j = [];
+		if (file_exists($f)) {
+			$raw = @file_get_contents($f);
+			$j = json_decode($raw, true) ?: [];
+		}
+		$etag = null; $lm = null;
+		foreach ($headers as $h) {
+			if (stripos($h, 'etag:') === 0) $etag = trim(substr($h, 5));
+			if (stripos($h, 'last-modified:') === 0) $lm = trim(substr($h, 13));
+		}
+		$j[$url] = ['etag'=>$etag,'last_modified'=>$lm,'ts'=>time(),'body'=>$payload];
+		@file_put_contents($f, json_encode($j));
+	}
+
+	/**
+	 * Parallel HTTP GET (HTTPS-only), returns array of [$url => [code, body, headers[]]]
+	 */
+	private function http_multi_get($urls, $headers = array())
+	{
+    $mh = curl_multi_init();
+    $handles = array();
+    $results = array();
+    $limit = (int)$this->config->get('pm_http_parallel', 6);
+    $queue = array_values(array_unique($urls));
+    $active = 0;
+    $ua = isset($this->http_user_agent) ? $this->http_user_agent : 'Roundcube-Plugin-Manager/1.0';
+
+    $attach = function($url) use (&$mh, &$handles, $headers, $ua) {
+        $ch = curl_init();
+        $h = $headers ?: array();
+        curl_setopt_array($ch, array(
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_PROTOCOLS => (defined('CURLPROTO_HTTPS') ? CURLPROTO_HTTPS : 3),
+            CURLOPT_REDIR_PROTOCOLS => (defined('CURLPROTO_HTTPS') ? CURLPROTO_HTTPS : 3),
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_USERAGENT => $ua,
+            CURLOPT_HEADER => true,
+        ));
+        curl_multi_add_handle($mh, $ch);
+        $handles[(int)$ch] = $url;
+    };
+
+    while ($queue and $active < $limit):
+        $attach(array_shift($queue));
+        $active++;
+    endwhile;
+
+    do {
+        $status = curl_multi_exec($mh, $running);
+        if ($status > CURLM_OK) break;
+        while ($info = curl_multi_info_read($mh)) {
+            $ch = $info['handle'];
+            $url = $handles[(int)$ch];
+            $raw = curl_multi_getcontent($ch);
+            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $header_size = (int)curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $hblock = substr($raw, 0, $header_size);
+            $body = substr($raw, $header_size);
+            $headers_array = array_filter(array_map('trim', explode("
+			", $hblock)));
+            $results[$url] = array($code, $body, $headers_array);
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+            unset($handles[(int)$ch]);
+            if ($queue):
+                $attach(array_shift($queue));
+            else:
+                $active--;
+            endif;
+        }
+        curl_multi_select($mh, 0.2);
+    } while ($running || $active);
+
+    curl_multi_close($mh);
+    return $results;
+}
+
+public function action_bulk_update()
+{
+    $rcmail = rcmail::get_instance();
+    // Accept POST with CSRF if strict; otherwise allow legacy (but prefer POST)
+    $strict = (bool)$this->config->get('pm_strict_csrf', false);
+    if ($strict) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $rcmail->output->show_message($this->gettext('invalid_request') ?: 'Invalid request', 'error');
+            $rcmail->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
+            return;
+        }
+        $token = rcube_utils::get_input_value('_token', rcube_utils::INPUT_POST);
+        if (!$token || (method_exists($rcmail->output, 'verify_request') ? !$rcmail->output->verify_request($token) : false)) {
+            $rcmail->output->show_message($this->gettext('invalid_request') ?: 'Invalid request', 'error');
+            $rcmail->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
+            return;
+        }
+    }
+    $dirs = rcube_utils::get_input_value('_pm_selected', rcube_utils::INPUT_POST, true);
+    if (!is_array($dirs) || empty($dirs)) {
+        $rcmail->output->show_message($this->gettext('nothing_selected') ?: 'Nothing selected', 'warning');
+        $rcmail->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
+        return;
+    }
+    $ok = 0; $fail = 0;
+    foreach ($dirs as $dir) {
+        $dir = preg_replace('/[^a-z0-9_\-\.]+/i', '', $dir);
+        if (!$dir) continue;
+        try {
+            $res = $this->do_update_plugin($dir); // assumes you have an internal method used by action_update
+            $ok++;
+        } catch (Exception $e) {
+            $fail++;
+        }
+    }
+    $msg = sprintf('Updated %d plugins, %d failed.', $ok, $fail);
+    $rcmail->output->show_message($msg, $fail ? 'error' : 'confirmation');
+    $rcmail->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
+}
+
+public function action_changelog()
+{
+    $rcmail = rcmail::get_instance();
+    $repo = rcube_utils::get_input_value('_repo', rcube_utils::INPUT_GPC);
+    if (!$repo) {
+        echo "<pre>No repository mapping for this plugin.</pre>";
+        exit;
+    }
+    $url = 'https://api.github.com/repos/' . $repo . '/releases/latest';
+    try {
+        list($code, $body, $hdr) = $this->http_get2($url, array('Accept: application/vnd.github+json'));
+        if ($code == 200) {
+            $j = json_decode($body, true);
+            $tag = $j['tag_name'] ?? '';
+            $name = $j['name'] ?? '';
+            $txt = $j['body'] ?? '(no release notes)';
+            $safe = htmlspecialchars($txt, ENT_QUOTES, 'UTF-8');
+            echo "<h3>" . rcube::Q($name ?: $tag) . "</h3><pre style='white-space:pre-wrap'>" . $safe . "</pre>";
+        } else {
+            echo "<pre>Failed to fetch release notes (HTTP $code)</pre>";
+        }
+    } catch (Exception $e) {
+        echo "<pre>Error: " . rcube::Q($e->getMessage()) . "</pre>";
+    }
+    exit;
+}
+
 }
