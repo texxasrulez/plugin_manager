@@ -1,7 +1,7 @@
 <?php
 $labels = [
   'plugin_manager_title' => 'Plugin Manager',
-  'plugin_manager_desc'  => 'Plugin Manager inspects plugins for updates, installs them and can restore if needed.',
+  'plugin_manager_desc'  => 'Plugin Manager checks plugins for updates. It installs and creates backups so you can restore if needed.',
   'plugin'               => 'Plugin',
   'directory'            => 'Directory',
   'enabled'              => 'Enabled',

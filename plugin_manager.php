@@ -543,7 +543,7 @@ return $args;
                         . '</tr>';
             }
 
-            $h[] = '</tbody></table>';
+            $h[] = '</tbody></table><br />';
             $h[] = '<script>
 			(function(){
 			  var table = document.getElementById("pm-table");
