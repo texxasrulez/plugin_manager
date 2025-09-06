@@ -65,10 +65,41 @@ class plugin_manager extends rcube_plugin
 
     function init()
     {
-        // include UI helpers JS on settings page
+        
+        // Ensure AJAX actions are always registered, regardless of current action
+        $this->register_action('plugin.plugin_manager.load_config', array($this, 'action_load_config'));
+        $this->register_action('plugin.plugin_manager.save_config', array($this, 'action_save_config'));
+        $this->register_action('plugin_manager.load_config', array($this, 'action_load_config'));
+        $this->register_action('plugin_manager.save_config', array($this, 'action_save_config'));
+// include UI helpers JS on settings page
         $rcmail = rcmail::get_instance();
         if ($rcmail->task === 'settings' && ($rcmail->action === 'plugin.plugin_manager' || $rcmail->action === 'preferences')) {
             $this->include_script('plugin_manager.ui.js');
+
+        // Preload Ace Editor locally if present (avoids CSP blocking dynamic loads)
+        $ace_local = __DIR__ . '/assets/ace/ace.js';
+        if (file_exists($ace_local)) {
+            $this->include_script('assets/ace/ace.js');
+            if (file_exists(__DIR__ . '/assets/ace/mode-php.js')) $this->include_script('assets/ace/mode-php.js');
+            if (file_exists(__DIR__ . '/assets/ace/theme-monokai.js')) $this->include_script('assets/ace/theme-monokai.js');
+            if (file_exists(__DIR__ . '/assets/ace/ext-language_tools.js')) $this->include_script('assets/ace/ext-language_tools.js');
+            if (file_exists(__DIR__ . '/assets/ace/worker-php.js')) $this->include_script('assets/ace/worker-php.js');
+        }
+    
+        // Expose Ace base path for local loading
+        $rcmail = rcmail::get_instance();
+        if ($rcmail && $rcmail->output) {
+            $rcmail->output->set_env('pm_ace_base', 'plugins/plugin_manager/assets/ace');
+        }
+
+        // Register AJAX actions (both canonical and legacy keys)
+        $this->register_action('plugin.plugin_manager.load_config', array($this, 'action_load_config'));
+        $this->register_action('plugin.plugin_manager.save_config', array($this, 'action_save_config'));
+        $this->register_action('plugin_manager.load_config', array($this, 'action_load_config'));
+        $this->register_action('plugin_manager.save_config', array($this, 'action_save_config'));
+
+        $this->register_action('plugin_manager.load_config', array($this, 'action_load_config'));
+        $this->register_action('plugin_manager.save_config', array($this, 'action_save_config'));
         }
         
         $this->rc = rcube::get_instance();
@@ -532,8 +563,24 @@ return $args;
                 $en_html = $r['enabled'] ? '<strong class="pm-enabled">' . $en_label_yes . '</strong>' : '<strong class="pm-disabled">' . $en_label_no . '</strong>';
                 $en_sort = $r['enabled'] ? '1' : '0';
 
-                $h[] = '<tr' . $rowcls . '>'
-                        . '<td>' . rcube::Q($r['name']) . '</td>'
+                
+                $pm_has_cfg = false;
+                try {
+                    $root = dirname(__DIR__);
+                    $base = basename($r['dir']);
+                    $plugdir = ($root ? ($root . DIRECTORY_SEPARATOR . $base) : $r['dir']);
+                    $pm_has_cfg = (is_readable($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php') || is_readable($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php.dist'));
+                } catch (Exception $e) {
+                    $pm_has_cfg = false;
+                }
+                $edit_link = '';
+                if ($pm_has_cfg) {
+                    $edit_title = rcube::Q($this->gettext('edit_config_hint'));
+                    $edit_label = rcube::Q($this->gettext('edit_config'));
+                    $edit_link  = ' <a href="#" class="pm-editcfg" data-plugin="' . rcube::Q(basename($r['dir'])) . '" title="' . $edit_title . '">[' . $edit_label . ']</a>';
+                }
+$h[] = '<tr' . $rowcls . '>'
+                        . '<td>' . rcube::Q($r['name']) . $edit_link . '</td>'
                         . '<td>' . rcube::Q($r['dir']) . '</td>'
                         . '<td data-sort="' . $en_sort . '">' . $en_html . '</td>'
                         . '<td>' . rcube::Q($r['local']) . '</td>'
@@ -667,7 +714,7 @@ return $args;
 
     private function discover_plugins()
     {
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
         $this->log_debug('discover_plugins root', array('root' => $root));
         $out = array();
         if (!$root) return $out;
@@ -982,7 +1029,7 @@ return $args;
 
     private function perform_update($dir_name)
     {
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
         if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
         if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
         if (!$root) { $this->log_debug('perform_update no_root'); throw new Exception(rcube::Q($this->gettext('no_locate_dir'))); }
@@ -1193,7 +1240,7 @@ private function is_update_admin()
 
     private function has_backup($dir_name)
     {
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
         if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
         if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
         if (!$root) { return false; }
@@ -1211,7 +1258,7 @@ private function is_update_admin()
 
     private function restore_plugin($dir_name)
     {
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
         if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
         if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
         if (!$root) { throw new Exception('Cannot locate plugins directory'); }
@@ -1329,7 +1376,7 @@ private function is_update_admin()
     {
         $keep = (int)$this->config->get('pm_keep_backups', 3);
         $max_age_days = (int)$this->config->get('pm_backups_max_age_days', 0);
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
         if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
         if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
         if (!$root) { return; }
@@ -1500,7 +1547,7 @@ private function is_update_admin()
     {
         $ok = 0; $fail = 0; $skipped = array();
         $plugins = $this->discover_plugins();
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
 
         foreach ($plugins as $p) {
             $d = basename($p['dir']);
@@ -1589,7 +1636,7 @@ private function is_update_admin()
 
     private function eligible_count()
     {
-        $root = $this->plugins_root_dir();
+        $root = dirname(__DIR__);
         if (!$root) return 0;
         $eligible = 0;
 
@@ -1792,4 +1839,119 @@ public function action_changelog()
     exit;
 }
 
+
+
+    /**
+     * Load config.inc.php (or .dist) of a plugin and return JSON.
+     * GET params: _pm_plug (dir name)
+     */
+    
+    
+    public function action_load_config()
+    {
+        // Kill any buffered output to keep response pure JSON
+        while (ob_get_level() > 0) { @ob_end_clean(); }
+        $this->rc->output->reset();
+        @header('Content-Type: application/json; charset=UTF-8');
+$plug = rcube_utils::get_input_value('_pm_plug', rcube_utils::INPUT_GPC);
+        $plug = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$plug);
+
+        $root = dirname(__DIR__);
+        $plugdir = ($plug !== '' && $root) ? ($root . DIRECTORY_SEPARATOR . $plug) : null;
+        $cfg  = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php') : null;
+        $cfgd = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php.dist') : null;
+
+        $debug = array(
+            'plug' => $plug,
+            'root' => $root,
+            'plugdir' => $plugdir,
+            'cfg' => $cfg,
+            'cfg_exists' => $cfg ? file_exists($cfg) : null,
+            'cfg_readable' => $cfg ? is_readable($cfg) : null,
+            'cfgd' => $cfgd,
+            'cfgd_exists' => $cfgd ? file_exists($cfgd) : null,
+            'cfgd_readable' => $cfgd ? is_readable($cfgd) : null,
+        );
+
+        if ($plug === '') {
+            echo json_encode(array('ok'=>false, 'error'=>'missing_plugin', 'debug'=>$debug));
+            exit;
+        }
+        if (!$plugdir || !is_dir($plugdir)) {
+            echo json_encode(array('ok'=>false, 'error'=>'plugdir_not_found', 'debug'=>$debug));
+            exit;
+        }
+
+        $path = null;
+        $readonly = false;
+        if ($cfg && is_readable($cfg)) {
+            $path = $cfg;
+        } elseif ($cfgd && is_readable($cfgd)) {
+            $path = $cfgd;
+            $readonly = true;
+        } else {
+            echo json_encode(array('ok'=>false, 'error'=>'no_config', 'debug'=>$debug));
+            exit;
+        }
+
+        $text = @file_get_contents($path);
+        if ($text === false) {
+            echo json_encode(array('ok'=>false, 'error'=>'read_fail', 'debug'=>array_merge($debug, array('path'=>$path))));
+            exit;
+        }
+        echo json_encode(array('ok'=>true, 'path'=>$path, 'readonly'=>$readonly, 'content'=>$text, 'debug'=>$debug));
+        exit;
+    }
+
+
+    public function action_save_config()
+    {
+        // Kill any buffered output to keep response pure JSON
+        while (ob_get_level() > 0) { @ob_end_clean(); }
+        $this->rc->output->reset();
+        @header('Content-Type: application/json; charset=UTF-8');
+$plug = rcube_utils::get_input_value('_pm_plug', rcube_utils::INPUT_POST);
+        $plug = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$plug);
+        $content = rcube_utils::get_input_value('_pm_content', rcube_utils::INPUT_POST, true);
+
+        $root = dirname(__DIR__);
+        $plugdir = ($plug !== '' && $root) ? ($root . DIRECTORY_SEPARATOR . $plug) : null;
+
+        if ($plug === '' || $content === null) {
+            echo json_encode(array('ok'=>false, 'error'=>'bad_params', 'debug'=>array('plug'=>$plug, 'len'=>strlen((string)$content))));
+            exit;
+        }
+        if (!$plugdir || !is_dir($plugdir)) {
+            echo json_encode(array('ok'=>false, 'error'=>'plugdir_not_found', 'debug'=>array('plugdir'=>$plugdir)));
+            exit;
+        }
+
+        $file = $plugdir . DIRECTORY_SEPARATOR . 'config.inc.php';
+        // Prep directory writability info for debug
+        $debug = array(
+            'plug'=>$plug,
+            'plugdir'=>$plugdir,
+            'file'=>$file,
+            'exists'=>file_exists($file),
+            'writable'=>file_exists($file) ? is_writable($file) : null,
+            'dir_writable'=>is_writable($plugdir),
+        );
+
+        if (file_exists($file) && !is_writable($file)) {
+            echo json_encode(array('ok'=>false, 'error'=>'not_writable', 'debug'=>$debug));
+            exit;
+        }
+        if (!file_exists($file) && !is_writable($plugdir)) {
+            echo json_encode(array('ok'=>false, 'error'=>'dir_not_writable', 'debug'=>$debug));
+            exit;
+        }
+
+        $ok = @file_put_contents($file, $content);
+        if ($ok === false) {
+            echo json_encode(array('ok'=>false, 'error'=>'write_fail', 'debug'=>$debug));
+            exit;
+        }
+        echo json_encode(array('ok'=>true, 'file'=>$file));
+        exit;
+    }
 }

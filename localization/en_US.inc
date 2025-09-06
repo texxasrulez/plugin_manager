@@ -77,4 +77,6 @@ $labels = [
   'running'				 => 'Running ... ',
   'checking'			 => 'Checking ... ',
   'reloading'			 => 'Reloading ... ',  
+  'edit_config'        => 'Edit config',
+  'edit_config_hint'   => 'Edit config.inc.php for this plugin',
 ];
