@@ -66,7 +66,35 @@ class plugin_manager extends rcube_plugin
     function init()
     {
         
-        // Ensure AJAX actions are always registered, regardless of current action
+        
+// ---- pm: ensure rc instance + load plugin config before setting env ----
+$rcmail = rcmail::get_instance();
+if (!isset($this->rc) || !$this->rc) {
+    $this->rc = $rcmail;
+}
+if (method_exists($this, 'pm_load_config')) {
+    $this->pm_load_config();
+} else {
+    $this->load_config('config.inc.php.dist');
+    $this->load_config('config.inc.php');
+}
+if ($rcmail && $rcmail->output) {
+    // keep/ensure base path for Ace
+    if (!isset($rcmail->output->env['pm_ace_base'])) {
+        $rcmail->output->set_env('pm_ace_base', 'plugins/plugin_manager/assets/ace');
+    }
+    $cfg = $rcmail->config;
+    $rcmail->output->set_env('pm_ace_theme',       $cfg->get('pm_ace_theme', 'auto'));
+    $rcmail->output->set_env('pm_ace_light_theme', $cfg->get('pm_ace_light_theme', 'github'));
+    $rcmail->output->set_env('pm_ace_dark_theme',  $cfg->get('pm_ace_dark_theme', 'dracula'));
+    // load theme guard after UI scripts
+    if (method_exists($this, 'include_script')) {
+        $this->include_script('assets/pm-ace-theme-guard.js', 'foot');
+    }
+}
+// ---- /pm ----
+
+// Ensure AJAX actions are always registered, regardless of current action
         $this->register_action('plugin.plugin_manager.load_config', array($this, 'action_load_config'));
         $this->register_action('plugin.plugin_manager.save_config', array($this, 'action_save_config'));
         $this->register_action('plugin_manager.load_config', array($this, 'action_load_config'));
@@ -84,6 +112,9 @@ class plugin_manager extends rcube_plugin
             if (file_exists(__DIR__ . '/assets/ace/theme-monokai.js')) $this->include_script('assets/ace/theme-monokai.js');
             if (file_exists(__DIR__ . '/assets/ace/ext-language_tools.js')) $this->include_script('assets/ace/ext-language_tools.js');
             if (file_exists(__DIR__ . '/assets/ace/worker-php.js')) $this->include_script('assets/ace/worker-php.js');
+        // Auto-attach helper + base styles for Ace in dialogs
+        $this->include_script('assets/pm-ace-auto.js');
+        $this->include_stylesheet('assets/pm-ace.css');
         }
     
         // Expose Ace base path for local loading

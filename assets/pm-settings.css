@@ -1,0 +1,12 @@
+/* Plugin Manager settings icon (try user's icon first, fallback to ours) */
+li.pm-settings > a,
+#rcmrowpm_settings a,
+#rcmrowpm_settings .listitem a {
+  background-image:
+    url(plugins/plugin_manager/assets/pm-icon.svg),
+    url(plugins/plugin_manager/assets/plugin_manager.svg),
+    url(plugins/plugin_manager/assets/pm-settings.svg);
+  background-repeat: no-repeat;
+  background-position: 6px center;
+  padding-left: 28px;
+}

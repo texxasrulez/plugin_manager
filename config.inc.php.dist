@@ -74,6 +74,13 @@ $config['pm_webhook_events'] = ['notify','update','bulk']; // choose events
 $config['pm_require_checksum'] = false;       // require a SHA256 asset for release zips
 $config['pm_checksum_asset_regex'] = '/(sha256|checksums).*\.(txt|sha256)$/i';
 
+// ===== Ace editor (themes) =====
+// Choose a theme for Ace. Use 'auto' to pick based on system preference.
+// NOTE: In this plugin package we ship only 'monokai' locally. Other themes will be loaded from CDN on demand.
+$config['pm_ace_theme']       = 'vibrant_ink';     // 'auto' or explicit theme (e.g., 'monokai')
+$config['pm_ace_light_theme'] = 'github';  // used when pm_ace_theme = 'auto'
+$config['pm_ace_dark_theme']  = 'vibrant_ink';  // used when pm_ace_theme = 'auto'
+
 // ===== Hidden plugins (do not show in UI) =====
 // Names must match plugin directory names (case-insensitive).
 // Pre-fill with Roundcube core plugins you might not want managed here. These are taken care of by the Roundcube team.

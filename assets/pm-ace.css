@@ -1,4 +1,30 @@
+/* pm-ace.css v5 */
+/* Make the ace host fill the dialog content area nicely */
+.ui-dialog .pm-ace-host,
+.popupdialog .pm-ace-host {
+  width: 100%;
+  height: 60vh;          /* responsive height */
+  min-height: 360px;
+  border: 1px solid #222;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
 
-/* plugin_manager/assets/pm-ace.css */
-.pm-ace-wrap { position: relative; }
-.pm-ace { border: 1px solid #c4c4c4; border-radius: 3px; }
+/* Prevent background page from getting scrollbars while dialog is open */
+body.pmace-modal-open {
+  overflow: hidden !important;
+}
+
+/* Keep dialog within the viewport and avoid horizontal overflow */
+.ui-dialog {
+  max-width: calc(100vw - 32px);
+}
+
+.ui-dialog .ui-dialog-content {
+  overflow: hidden; /* ace handles its own scroll */
+}
+
+/* Fix toast/messages area clipping within narrow viewports */
+#messagestack, .message-stack, .rcmMessageStack {
+  overflow-x: visible !important;
+}

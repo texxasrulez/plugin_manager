@@ -1,4 +1,39 @@
 
+// /*__PM_ACE_SET_THEME_GUARD__*/
+(function(){
+  try {
+    var Editor = ace.require('ace/editor').Editor;
+    var _orig = Editor.prototype.setTheme;
+    Editor.prototype.setTheme = function(name){
+      try {
+        var env = (window.rcmail && rcmail.env) || {};
+        var selected = (env.pm_ace_theme != null ? env.pm_ace_theme : 'dracula') + '';
+        var light = (env.pm_ace_light_theme || 'monokai') + '';
+        var dark  = (env.pm_ace_dark_theme  || 'monokai') + '';
+        var desired = selected === 'auto'
+          ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? dark : light)
+          : selected;
+        // normalize
+        desired = (desired||'').toLowerCase().replace(/[\s-]+/g,'_');
+        var aliases = {'solarizeddark':'solarized_dark','solarizedlight':'solarized_light','tomorrownight':'tomorrow_night'};
+        if (aliases[desired]) desired = aliases[desired];
+        // if someone tries to force monokai but config wants something else, redirect
+        if ((name === 'ace/theme/monokai' || name === 'monokai') && desired && desired !== 'monokai') {
+          name = 'ace/theme/' + desired;
+        }
+      } catch(e){}
+      return _orig.call(this, name);
+    };
+  } catch(e){}
+})();
+
+// /*__PM_ACE_AMD_SHIM__*/
+(function(){ try {
+  if (window.ace) {
+    if (!window.define && ace.define)  window.define  = ace.define;
+    if (!window.require && ace.require) window.require = ace.require;
+  }
+} catch(e){} })();
 // ==== BEGIN: Ace Editor integration for Plugin Manager ====
 (function(){
   function log(){ try { if (window.console && console.debug) console.debug.apply(console, arguments); } catch(e){} }
@@ -60,7 +95,38 @@
     var editor = ace.edit(wrap.id);
     try {
       editor.session.setMode('ace/mode/php');
-      editor.setTheme('ace/theme/monokai');
+(function(){
+  try {
+    var env = (window.rcmail && rcmail.env) || {};
+    var selected = (env.pm_ace_theme != null ? env.pm_ace_theme : 'dracula') + '';
+    var light = (env.pm_ace_light_theme || 'monokai') + '';
+    var dark  = (env.pm_ace_dark_theme  || 'monokai') + '';
+    var themeName = selected === 'auto'
+      ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? dark : light)
+      : selected;
+    var localBase = (env.pm_ace_base) || 'plugins/plugin_manager/assets/ace';
+    var cdnBase   = 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.3/src-min-noconflict';
+    var themeUrlLocal = localBase + '/theme-' + themeName + '.js';
+    var themeUrlCdn   = cdnBase  + '/theme-' + themeName + '.js';
+    // Minimal loader if not present
+    if (typeof loadScript !== 'function') {
+      window.loadScript = function(url){
+        return new Promise(function(resolve, reject){
+          try{
+            var s = document.createElement('script');
+            s.src = url; s.async = true;
+            s.onload = function(){ resolve(); };
+            s.onerror = function(){ reject(new Error('load fail: '+url)); };
+            (document.head||document.documentElement).appendChild(s);
+          } catch(e){ reject(e); }
+        });
+      };
+    }
+    loadScript(themeUrlLocal).catch(function(){ return loadScript(themeUrlCdn); })
+      .finally(function(){ try { editor.setTheme('ace/theme/' + themeName); } catch(e){} });
+  } catch(e) {}
+})();
+
     } catch(e){}
     editor.setOptions({
       showPrintMargin: true,
@@ -81,8 +147,7 @@
     }
 
     function wireSave(){
-      var btn = document.getElementById('pm-editor-save') ||
-                document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
+      var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
       if (btn && !btn.__pmAceWired){
         btn.addEventListener('click', bridgeTextarea, {capture: true});
         btn.__pmAceWired = true;
@@ -96,8 +161,7 @@
       bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
       exec: function(){
         bridgeTextarea();
-        var btn = document.getElementById('pm-editor-save') ||
-                  document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
+        var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
         if (btn) btn.click();
       }
     });
@@ -184,7 +248,38 @@
     var editor = ace.edit(wrap.id);
     try {
       editor.session.setMode('ace/mode/php');
-      editor.setTheme('ace/theme/monokai');
+(function(){
+  try {
+    var env = (window.rcmail && rcmail.env) || {};
+    var selected = (env.pm_ace_theme != null ? env.pm_ace_theme : 'dracula') + '';
+    var light = (env.pm_ace_light_theme || 'monokai') + '';
+    var dark  = (env.pm_ace_dark_theme  || 'monokai') + '';
+    var themeName = selected === 'auto'
+      ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? dark : light)
+      : selected;
+    var localBase = (env.pm_ace_base) || 'plugins/plugin_manager/assets/ace';
+    var cdnBase   = 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.3/src-min-noconflict';
+    var themeUrlLocal = localBase + '/theme-' + themeName + '.js';
+    var themeUrlCdn   = cdnBase  + '/theme-' + themeName + '.js';
+    // Minimal loader if not present
+    if (typeof loadScript !== 'function') {
+      window.loadScript = function(url){
+        return new Promise(function(resolve, reject){
+          try{
+            var s = document.createElement('script');
+            s.src = url; s.async = true;
+            s.onload = function(){ resolve(); };
+            s.onerror = function(){ reject(new Error('load fail: '+url)); };
+            (document.head||document.documentElement).appendChild(s);
+          } catch(e){ reject(e); }
+        });
+      };
+    }
+    loadScript(themeUrlLocal).catch(function(){ return loadScript(themeUrlCdn); })
+      .finally(function(){ try { editor.setTheme('ace/theme/' + themeName); } catch(e){} });
+  } catch(e) {}
+})();
+
     } catch(e){ /* fallback if modules not present */ }
     editor.setOptions({
       showPrintMargin: true,
@@ -200,6 +295,18 @@
     editor.session.setValue(ta.value || '');
     if (readOnly) editor.setReadOnly(true);
 
+    
+    // Keep the hidden <textarea> in sync with Ace
+    function __pmBridgeTextarea(){ try { ta.value = editor.getValue(); } catch(e){} }
+    try { editor.session.on('change', __pmBridgeTextarea); } catch(e){}
+    try {
+      var __pmPreSave = function(){ __pmBridgeTextarea(); };
+      document.addEventListener('click', function(ev){
+        var el = ev.target && ev.target.closest ? ev.target.closest('#pm-editor-save, .ui-dialog-buttonpane button, .dialog input.mainaction') : null;
+        if (el) __pmBridgeTextarea();
+      }, true);
+      if (ta.form) ta.form.addEventListener('submit', __pmPreSave, true);
+    } catch(e){}
     editor.commands.addCommand({
       name: 'save',
       bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
@@ -223,8 +330,7 @@
       var readonly = !!(ta.readOnly || ta.disabled || ta.getAttribute('data-readonly') == '1');
       window.__pmAce = pmAttachAce('pm-editor', readonly);
       // try to tag the Save button for keyboard shortcut
-      var btn = document.getElementById('pm-editor-save') ||
-                document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
+      var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
       if (btn && !btn.id) btn.id = 'pm-editor-save';
     }).catch(function(e){
       console.warn('Ace load failed, falling back to textarea', e);
@@ -459,7 +565,31 @@
         var d = dlg();
         var ta = d.querySelector('#pm-text');
         ta.value = j.content || '';
-        var close = function(){ d.remove(); };
+        // Attach Ace editor to overlay textarea
+        try { pmLoadAce(function(){}); } catch(e) {}
+        pmLoadAce().then(function() {
+          try {
+            if (window.__pmAce && window.__pmAce.textarea && window.__pmAce.textarea !== ta) {
+              try { window.__pmAce.editor.destroy(); } catch(e){}
+              try { if (window.__pmAce.container && window.__pmAce.container.parentNode) window.__pmAce.container.parentNode.removeChild(window.__pmAce.container); } catch(e){}
+              try { if (window.__pmAce.textarea) window.__pmAce.textarea.style.display = ''; } catch(e){}
+              window.__pmAce = null;
+            }
+            window.__pmAce = pmAttachAce('pm-text', { readOnly: false });
+          } catch(e) {}
+        });
+
+        var close = function(){
+  try {
+    if (window.__pmAce && window.__pmAce.container) {
+      try { window.__pmAce.editor.destroy(); } catch(e){}
+      try { if (window.__pmAce.container.parentNode) window.__pmAce.container.parentNode.removeChild(window.__pmAce.container); } catch(e){}
+      try { if (window.__pmAce.textarea) window.__pmAce.textarea.style.display = ''; } catch(e){}
+    }
+    window.__pmAce = null;
+  } catch(e) {}
+  d.remove();
+};
         d.querySelector('#pm-close').onclick = close;
         d.querySelector('#pm-cancel').onclick = close;
         d.addEventListener('click', function(e){ if (e.target === d) close(); });
@@ -467,7 +597,8 @@
           showMsg(d, '');
           var data = new URLSearchParams();
           data.set('_pm_plug', plug);
-          data.set('_pm_content', ta.value);
+          var _val = (window.__pmAce && window.__pmAce.editor) ? window.__pmAce.editor.getValue() : ta.value;
+          data.set('_pm_content', _val);
           data.set('_token', (rcmail.env && rcmail.env.request_token) || '');
           var post = (rcmail && rcmail.env && rcmail.env.comm_path ? rcmail.env.comm_path : window.location.pathname + '?_task=settings');
           post += '&_remote=1&_action=plugin.plugin_manager.save_config&_plugin=plugin_manager';
@@ -482,7 +613,7 @@
               if (!j2 || !j2.ok) { console.error('pm save_config server json', j2); throw new Error((j2 && j2.error) || 'Save failed'); }
               close();
               if (window.rcmail && rcmail.display_message) {
-                rcmail.display_message('Saved ' + (j2.file || ''), 'confirmation');
+                rcmail.display_message('Config Saved Successfully', 'confirmation');
               }
             })
             .catch(function(err){
@@ -507,8 +638,7 @@
     window.pmLoadAce().then(function(){
       var readonly = !!(ta.readOnly || ta.disabled || ta.getAttribute('data-readonly') == '1');
       window.__pmAce = pmAttachAce('pm-editor', readonly);
-      var btn = document.getElementById('pm-editor-save') ||
-                document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
+      var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
       if (btn && !btn.id) btn.id = 'pm-editor-save';
     }).catch(function(e){ /* silent fallback */ });
   }
