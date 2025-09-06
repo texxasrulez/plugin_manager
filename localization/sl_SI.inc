@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Upravitelj vtičnikov';
-$labels['plugin_manager_desc'] = 'Pregleda nameščene vtičnike Roundcube in preveri posodobitve.';
+$labels['plugin_manager_desc'] = 'Upravitelj vtičnikov preveri posodobitve vtičnikov. Namesti in ustvari varnostne kopije, da jih lahko po potrebi obnovite.';
 $labels['plugin'] = 'Vtičnik';
 $labels['directory'] = 'Imenik';
 $labels['enabled'] = 'Omogočeno';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Dokončana množična posodobitev';
 $labels['just_now'] = ' Ravno zdaj';
 $labels['min_ago'] = ' pred nekaj minutami';
 $labels['hr_ago'] = ' pred uro';
+$labels['websites'] = 'Spletne strani';
+$labels['running'] = 'Tek ...';
+$labels['checking'] = 'Preverjanje ...';
+$labels['reloading'] = 'Prelivanje ...';
+$labels['edit_config'] = 'Urejanje konfiguracije';
+$labels['edit_config_hint'] = 'Uredite config.inc.php za ta vtičnik';
 ?>

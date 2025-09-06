@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'مدير المكوّن الإضافي';
-$labels['plugin_manager_desc'] = 'يفحص إضافات Roundcube المثبتة ويتحقق من وجود تحديثات.';
+$labels['plugin_manager_desc'] = 'يتحقق مدير الإضافات من الإضافات بحثًا عن تحديثات. يقوم بتثبيت وإنشاء نسخ احتياطية حتى تتمكن من استعادتها إذا لزم الأمر.';
 $labels['plugin'] = 'المكوّن الإضافي';
 $labels['directory'] = 'الدليل';
 $labels['enabled'] = 'ممكّنة';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'اكتمل التحديث المجمع';
 $labels['just_now'] = ' الآن فقط';
 $labels['min_ago'] = ' منذ دقيقة';
 $labels['hr_ago'] = ' منذ ساعة';
+$labels['websites'] = 'المواقع الإلكترونية';
+$labels['running'] = 'تشغيل ...';
+$labels['checking'] = 'التحقق ...';
+$labels['reloading'] = 'إعادة التعبئة ...';
+$labels['edit_config'] = 'تحرير التكوين';
+$labels['edit_config_hint'] = 'تحرير config.inc.php لهذه الإضافة';
 ?>

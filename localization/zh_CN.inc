@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = '插件管理器';
-$labels['plugin_manager_desc'] = '检查已安装的 Roundcube 插件并检查更新。';
+$labels['plugin_manager_desc'] = '插件管理器可检查插件更新。它可以安装和创建备份，以便在需要时进行恢复。';
 $labels['plugin'] = '插件';
 $labels['directory'] = '目录';
 $labels['enabled'] = '已启用';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = '批量更新完成';
 $labels['just_now'] = '就是现在';
 $labels['min_ago'] = '分钟前';
 $labels['hr_ago'] = '一小时前';
+$labels['websites'] = '网站';
+$labels['running'] = '运行 ...';
+$labels['checking'] = '检查 ...';
+$labels['reloading'] = '重装 ...';
+$labels['edit_config'] = '编辑配置';
+$labels['edit_config_hint'] = '为该插件编辑 config.inc.php';
 ?>

@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Manajer Plugin';
-$labels['plugin_manager_desc'] = 'Memeriksa plugin Roundcube yang terpasang dan memeriksa pembaruan.';
+$labels['plugin_manager_desc'] = 'Pengelola Plugin memeriksa plugin untuk pembaruan. Ini menginstal dan membuat cadangan sehingga Anda dapat memulihkan jika diperlukan.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Direktori';
 $labels['enabled'] = 'Diaktifkan';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Pembaruan massal selesai';
 $labels['just_now'] = ' Baru saja';
 $labels['min_ago'] = ' menit yang lalu';
 $labels['hr_ago'] = ' jam yang lalu';
+$labels['websites'] = 'Situs web';
+$labels['running'] = 'Menjalankan ...';
+$labels['checking'] = 'Memeriksa ...';
+$labels['reloading'] = 'Memuat ulang ...';
+$labels['edit_config'] = 'Edit konfigurasi';
+$labels['edit_config_hint'] = 'Edit config.inc.php untuk plugin ini';
 ?>

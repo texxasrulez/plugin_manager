@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Správca zásuvných modulov';
-$labels['plugin_manager_desc'] = 'Kontroluje nainštalované doplnky Roundcube a kontroluje ich aktualizácie.';
+$labels['plugin_manager_desc'] = 'Správca zásuvných modulov kontroluje aktualizácie zásuvných modulov. Inštaluje a vytvára zálohy, aby ste ich mohli v prípade potreby obnoviť.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Adresár';
 $labels['enabled'] = 'Povolené';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Hromadná aktualizácia dokončená';
 $labels['just_now'] = ' Práve teraz';
 $labels['min_ago'] = ' pred minútami';
 $labels['hr_ago'] = ' pred hodinou';
+$labels['websites'] = 'Webové stránky';
+$labels['running'] = 'Behanie ...';
+$labels['checking'] = 'Kontrola ...';
+$labels['reloading'] = 'Prebíjanie...';
+$labels['edit_config'] = 'Upraviť konfiguráciu';
+$labels['edit_config_hint'] = 'Úprava súboru config.inc.php pre tento zásuvný modul';
 ?>

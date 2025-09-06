@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Eklenti Yöneticisi';
-$labels['plugin_manager_desc'] = 'Yüklü Roundcube eklentilerini inceler ve güncellemeleri kontrol eder.';
+$labels['plugin_manager_desc'] = 'Eklenti Yöneticisi eklentileri güncellemeler için kontrol eder. Gerektiğinde geri yükleyebilmeniz için yedekleri yükler ve oluşturur.';
 $labels['plugin'] = 'Eklenti';
 $labels['directory'] = 'Rehber';
 $labels['enabled'] = 'Etkin';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Toplu güncelleme tamamlandı';
 $labels['just_now'] = ' Şimdi';
 $labels['min_ago'] = ' dakika önce';
 $labels['hr_ago'] = ' bir saat önce';
+$labels['websites'] = 'Web Siteleri';
+$labels['running'] = 'Koşu ...';
+$labels['checking'] = 'Kontrol ...';
+$labels['reloading'] = 'Yeniden doldurma ...';
+$labels['edit_config'] = 'Yapılandırmayı düzenle';
+$labels['edit_config_hint'] = 'Bu eklenti için config.inc.php dosyasını düzenleyin';
 ?>

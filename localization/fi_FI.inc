@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin Manager';
-$labels['plugin_manager_desc'] = 'Tarkistaa asennetut Roundcube-liitännäiset ja tarkistaa päivitykset.';
+$labels['plugin_manager_desc'] = 'Plugin Manager tarkistaa liitännäisten päivitykset. Se asentaa ja luo varmuuskopioita, jotta voit tarvittaessa palauttaa ne.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Hakemisto';
 $labels['enabled'] = 'Käytössä';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Bulk-päivitys valmis';
 $labels['just_now'] = ' Juuri nyt';
 $labels['min_ago'] = ' min sitten';
 $labels['hr_ago'] = ' tunti sitten';
+$labels['websites'] = 'Verkkosivut';
+$labels['running'] = 'Running ...';
+$labels['checking'] = 'Tarkistaminen ...';
+$labels['reloading'] = 'Uudelleenlataus ...';
+$labels['edit_config'] = 'Muokkaa konfiguraatiota';
+$labels['edit_config_hint'] = 'Muokkaa config.inc.php:tä tätä laajennusta varten';
 ?>

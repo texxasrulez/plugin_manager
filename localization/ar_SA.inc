@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'مدير المكوّن الإضافي';
-$labels['plugin_manager_desc'] = 'يفحص إضافات Roundcube المثبتة ويتحقق من وجود تحديثات.';
+$labels['plugin_manager_desc'] = 'يتحقق مدير الإضافات من الإضافات بحثًا عن تحديثات. يقوم بتثبيت وإنشاء نسخ احتياطية حتى تتمكن من استعادتها إذا لزم الأمر.';
 $labels['plugin'] = 'المكوّن الإضافي';
 $labels['directory'] = 'الدليل';
 $labels['enabled'] = 'ممكّنة';
@@ -51,11 +51,11 @@ $labels['update_all_ood'] = 'تحديث جميع الإضافات القديمة
 $labels['dnload_update'] = 'قم بتنزيل هذه الإضافة وتحديثها';
 $labels['remote_disabled'] = 'تم تعطيل الاكتشاف عن بُعد حسب السياسة';
 $labels['pin_to'] = 'مثبتة على';
-$labels['ignore_updates'] = 'تجاهل التحديثات المجمعة';
+$labels['ignore_updates'] = 'تم تجاهل التحديثات المجمعة';
 $labels['no_source'] = 'لم يتم تكوين مصدر تحديث (لا يوجد GitHub/Packagist)';
 $labels['no_remote_ver'] = 'لم يتم العثور على إصدار بعيد';
 $labels['gitHub'] = 'جيثب';
-$labels['not_authorized'] = 'غير مصرح لك بإجراء تحديثات';
+$labels['not_authorized'] = 'أنت غير مصرح لك بإجراء تحديثات';
 $labels['missing_parameter'] = 'معلمة المكون الإضافي المفقودة';
 $labels['plugin_update_good'] = 'تم تحديث المكون الإضافي بنجاح';
 $labels['udpate_finished'] = 'تم الانتهاء من التحديث';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'اكتمل التحديث المجمع';
 $labels['just_now'] = ' الآن فقط';
 $labels['min_ago'] = ' منذ دقيقة';
 $labels['hr_ago'] = ' منذ ساعة';
+$labels['websites'] = 'المواقع الإلكترونية';
+$labels['running'] = 'تشغيل ...';
+$labels['checking'] = 'التحقق ...';
+$labels['reloading'] = 'إعادة التعبئة ...';
+$labels['edit_config'] = 'تحرير التكوين';
+$labels['edit_config_hint'] = 'تحرير config.inc.php لهذه الإضافة';
 ?>

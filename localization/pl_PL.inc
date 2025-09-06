@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Menedżer wtyczek';
-$labels['plugin_manager_desc'] = 'Sprawdza zainstalowane wtyczki Roundcube i sprawdza dostępność aktualizacji.';
+$labels['plugin_manager_desc'] = 'Plugin Manager sprawdza wtyczki pod kątem aktualizacji. Instaluje i tworzy kopie zapasowe, dzięki czemu można je przywrócić w razie potrzeby.';
 $labels['plugin'] = 'Wtyczka';
 $labels['directory'] = 'Katalog';
 $labels['enabled'] = 'Włączone';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Aktualizacja zbiorcza zakończona';
 $labels['just_now'] = ' Właśnie teraz';
 $labels['min_ago'] = ' min temu';
 $labels['hr_ago'] = ' godzinę temu';
+$labels['websites'] = 'Strony internetowe';
+$labels['running'] = 'Running ...';
+$labels['checking'] = 'Sprawdzanie ...';
+$labels['reloading'] = 'Przeładunek ...';
+$labels['edit_config'] = 'Edytuj konfigurację';
+$labels['edit_config_hint'] = 'Edytuj config.inc.php dla tej wtyczki';
 ?>

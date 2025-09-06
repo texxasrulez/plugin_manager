@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin-manager';
-$labels['plugin_manager_desc'] = 'Undersøger installerede Roundcube-plugins og tjekker for opdateringer.';
+$labels['plugin_manager_desc'] = 'Plugin Manager tjekker plugins for opdateringer. Den installerer og opretter sikkerhedskopier, så du kan gendanne, hvis det er nødvendigt.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Vejviser';
 $labels['enabled'] = 'Aktiveret';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Masseopdatering gennemført';
 $labels['just_now'] = ' Lige nu';
 $labels['min_ago'] = ' min siden';
 $labels['hr_ago'] = ' time siden';
+$labels['websites'] = 'Hjemmesider';
+$labels['running'] = 'Løb ...';
+$labels['checking'] = 'Tjekker ...';
+$labels['reloading'] = 'Genopladning ...';
+$labels['edit_config'] = 'Rediger konfiguration';
+$labels['edit_config_hint'] = 'Rediger config.inc.php for dette plugin';
 ?>

@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Įskiepių tvarkyklė';
-$labels['plugin_manager_desc'] = 'Tikrina įdiegtus "Roundcube" įskiepius ir tikrina, ar nėra atnaujinimų.';
+$labels['plugin_manager_desc'] = 'Įskiepių tvarkyklė tikrina, ar įskiepiai yra atnaujinami. Jis įdiegia ir sukuria atsargines kopijas, kad prireikus galėtumėte jas atkurti.';
 $labels['plugin'] = 'Įskiepis';
 $labels['directory'] = 'Katalogas';
 $labels['enabled'] = 'Įjungta';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Baigtas masinis atnaujinimas';
 $labels['just_now'] = ' Kaip tik dabar';
 $labels['min_ago'] = ' prieš keletą minučių';
 $labels['hr_ago'] = ' prieš valandą';
+$labels['websites'] = 'Interneto svetainės';
+$labels['running'] = 'Bėgimas ...';
+$labels['checking'] = 'Patikrinkite ...';
+$labels['reloading'] = 'Perkrovimo ...';
+$labels['edit_config'] = 'Redaguoti konfigūraciją';
+$labels['edit_config_hint'] = 'Redaguokite šio įskiepio config.inc.php';
 ?>

@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Gestione dei plugin';
-$labels['plugin_manager_desc'] = 'Controlla i plugin Roundcube installati e verifica la presenza di aggiornamenti.';
+$labels['plugin_manager_desc'] = 'Plugin Manager controlla che i plugin siano aggiornati. Installa e crea backup per poterli ripristinare in caso di necessità.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Elenco';
 $labels['enabled'] = 'Abilitato';
@@ -69,7 +69,13 @@ $labels['update_fail_restore'] = 'Aggiornamento fallito, ripristinato dal backup
 $labels['update_restore_fail'] = 'Aggiornamento non riuscito e ripristino non riuscito';
 $labels['no_backup_found'] = 'Nessun backup trovato';
 $labels['bulk_update_complete'] = 'Aggiornamento completo';
-$labels['just_now'] = ' Proprio ora';
+$labels['just_now'] = ' Solo ora';
 $labels['min_ago'] = ' min fa';
 $labels['hr_ago'] = ' ora fa';
+$labels['websites'] = 'Siti web';
+$labels['running'] = 'Corsa ...';
+$labels['checking'] = 'Controllo...';
+$labels['reloading'] = 'Ricarica...';
+$labels['edit_config'] = 'Modifica configurazione';
+$labels['edit_config_hint'] = 'Modificare config.inc.php per questo plugin';
 ?>

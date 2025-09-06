@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin Manager';
-$labels['plugin_manager_desc'] = 'Kontrollib paigaldatud Roundcube\'i pistikprogramme ja otsib uuendusi.';
+$labels['plugin_manager_desc'] = 'Plugin Manager kontrollib pluginate uuendusi. See installib ja loob varukoopiaid, et saaksite vajadusel taastada.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Kataloog';
 $labels['enabled'] = 'Lubatud';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Bulk update valmis';
 $labels['just_now'] = ' Just nüüd';
 $labels['min_ago'] = ' min tagasi';
 $labels['hr_ago'] = ' tund aega tagasi';
+$labels['websites'] = 'Veebilehed';
+$labels['running'] = 'Running ...';
+$labels['checking'] = 'Kontrollimine ...';
+$labels['reloading'] = 'Ümberlaadimine ...';
+$labels['edit_config'] = 'Konfiguuri muutmine';
+$labels['edit_config_hint'] = 'Edit config.inc.php selle plugina jaoks';
 ?>

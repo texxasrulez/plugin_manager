@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = '플러그인 관리자';
-$labels['plugin_manager_desc'] = '설치된 라운드큐브 플러그인을 검사하고 업데이트를 확인합니다.';
+$labels['plugin_manager_desc'] = '플러그인 관리자는 플러그인의 업데이트를 확인합니다. 필요한 경우 복원할 수 있도록 백업을 설치하고 생성합니다.';
 $labels['plugin'] = '플러그인';
 $labels['directory'] = '디렉토리';
 $labels['enabled'] = '활성화됨';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = '대량 업데이트 완료';
 $labels['just_now'] = ' 지금 바로';
 $labels['min_ago'] = ' 분 전';
 $labels['hr_ago'] = ' 한 시간 전';
+$labels['websites'] = '웹 사이트';
+$labels['running'] = '달리기 ...';
+$labels['checking'] = '확인 중 ...';
+$labels['reloading'] = '로딩 중 ...';
+$labels['edit_config'] = '구성 편집';
+$labels['edit_config_hint'] = '이 플러그인의 config.inc.php를 편집합니다';
 ?>

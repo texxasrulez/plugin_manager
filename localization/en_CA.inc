@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin Manager';
-$labels['plugin_manager_desc'] = 'Inspects installed Roundcube plugins and check for updates.';
+$labels['plugin_manager_desc'] = 'Plugin Manager checks plugins for updates. It installs and creates backups so you can restore if needed.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Directory';
 $labels['enabled'] = 'Enabled';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Bulk update complete';
 $labels['just_now'] = ' Just Now';
 $labels['min_ago'] = ' min ago';
 $labels['hr_ago'] = ' hour ago';
+$labels['websites'] = 'Websites';
+$labels['running'] = 'Running ... ';
+$labels['checking'] = 'Checking ... ';
+$labels['reloading'] = 'Reloading ... ';
+$labels['edit_config'] = 'Edit config';
+$labels['edit_config_hint'] = 'Edit config.inc.php for this plugin';
 ?>

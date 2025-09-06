@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Gestor de plugins';
-$labels['plugin_manager_desc'] = 'Inspecciona los plugins Roundcube instalados y comprueba si hay actualizaciones.';
+$labels['plugin_manager_desc'] = 'Plugin Manager comprueba las actualizaciones de los plugins. Se instala y crea copias de seguridad para que pueda restaurar si es necesario.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Directorio';
 $labels['enabled'] = 'Activado';
@@ -12,7 +12,7 @@ $labels['version_remote'] = 'Última versión';
 $labels['status'] = 'Estado';
 $labels['actions'] = 'Acciones';
 $labels['unknown'] = 'desconocido';
-$labels['up_to_date'] = 'Hasta la fecha';
+$labels['up_to_date'] = 'Al día';
 $labels['update_available'] = 'Actualización disponible';
 $labels['updateall'] = 'Actualizar todos los plugins';
 $labels['update_all'] = 'Actualizar todo';
@@ -38,7 +38,7 @@ $labels['debug_on_text'] = 'Compruebe logs/plugin_manager.log';
 $labels['test_update'] = 'Actualizaciones de las pruebas';
 $labels['testing_update'] = 'Actualizaciones de las pruebas';
 $labels['testing_complete'] = 'Actualizaciones de pruebas finalizadas';
-$labels['github_test'] = 'Publicaciones en GitHub: HTTP';
+$labels['github_test'] = 'Lanzamientos en GitHub: HTTP';
 $labels['diag_running'] = 'Diagnóstico en marcha';
 $labels['conn_diag'] = 'Diagnóstico de conectividad';
 $labels['never'] = 'Nunca';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Actualización masiva completada';
 $labels['just_now'] = ' Ahora mismo';
 $labels['min_ago'] = ' hace un minuto';
 $labels['hr_ago'] = ' hace una hora';
+$labels['websites'] = 'Páginas web';
+$labels['running'] = 'Correr ...';
+$labels['checking'] = 'Comprobación ...';
+$labels['reloading'] = 'Recarga ...';
+$labels['edit_config'] = 'Editar configuración';
+$labels['edit_config_hint'] = 'Editar config.inc.php para este plugin';
 ?>

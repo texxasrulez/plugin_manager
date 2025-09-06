@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin-hanterare';
-$labels['plugin_manager_desc'] = 'Inspekterar installerade Roundcube-plugins och söker efter uppdateringar.';
+$labels['plugin_manager_desc'] = 'Plugin Manager kontrollerar om plugins är uppdaterade. Den installerar och skapar säkerhetskopior så att du kan återställa vid behov.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Katalog';
 $labels['enabled'] = 'Aktiverad';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Bulkuppdatering slutförd';
 $labels['just_now'] = ' Just nu';
 $labels['min_ago'] = ' för en minut sedan';
 $labels['hr_ago'] = ' timme sedan';
+$labels['websites'] = 'Webbplatser';
+$labels['running'] = 'Running ...';
+$labels['checking'] = 'Kontrollerar...';
+$labels['reloading'] = 'Omladdning ...';
+$labels['edit_config'] = 'Redigera konfiguration';
+$labels['edit_config_hint'] = 'Redigera config.inc.php för detta plugin';
 ?>

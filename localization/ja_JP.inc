@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'プラグインマネージャー';
-$labels['plugin_manager_desc'] = 'インストールされているRoundcubeプラグインを検査し、更新をチェックします。';
+$labels['plugin_manager_desc'] = 'Plugin Managerはプラグインのアップデートをチェックします。プラグインをインストールしてバックアップを作成し、必要に応じて復元することができます。';
 $labels['plugin'] = 'プラグイン';
 $labels['directory'] = 'ディレクトリ';
 $labels['enabled'] = '有効';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = '一括更新完了';
 $labels['just_now'] = 'ちょうど今';
 $labels['min_ago'] = '分前';
 $labels['hr_ago'] = '時間前';
+$labels['websites'] = 'ウェブサイト';
+$labels['running'] = '走る ...';
+$labels['checking'] = 'チェック ...';
+$labels['reloading'] = 'リローディング ...';
+$labels['edit_config'] = '編集設定';
+$labels['edit_config_hint'] = 'このプラグインのconfig.inc.phpを編集する。';
 ?>

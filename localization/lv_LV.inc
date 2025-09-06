@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Spraudņu pārvaldnieks';
-$labels['plugin_manager_desc'] = 'Pārbauda instalētos Roundcube spraudņus un pārbauda, vai nav atjauninājumu.';
+$labels['plugin_manager_desc'] = 'Spraudņu pārvaldnieks pārbauda spraudņu atjauninājumus. Tas instalē un izveido rezerves kopijas, lai nepieciešamības gadījumā varētu atjaunot.';
 $labels['plugin'] = 'Spraudnis';
 $labels['directory'] = 'Katalogs';
 $labels['enabled'] = 'Ieslēgts';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Pabeigts liela apjoma atjauninājums';
 $labels['just_now'] = ' Tieši tagad';
 $labels['min_ago'] = ' pirms min';
 $labels['hr_ago'] = ' pirms stundas';
+$labels['websites'] = 'Tīmekļa vietnes';
+$labels['running'] = 'Skrējiena ...';
+$labels['checking'] = 'Pārbaude ...';
+$labels['reloading'] = 'Pārlāde...';
+$labels['edit_config'] = 'Konfigurācijas rediģēšana';
+$labels['edit_config_hint'] = 'Rediģēt config.inc.php šim spraudnim';
 ?>

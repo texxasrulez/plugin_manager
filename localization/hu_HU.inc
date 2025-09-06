@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin menedzser';
-$labels['plugin_manager_desc'] = 'Ellenőrzi a telepített Roundcube bővítményeket és ellenőrzi a frissítéseket.';
+$labels['plugin_manager_desc'] = 'A Plugin Manager ellenőrzi a pluginok frissítését. Telepíti és biztonsági mentéseket készít, így szükség esetén visszaállíthatja.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Címtár';
 $labels['enabled'] = 'Engedélyezve';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Tömeges frissítés befejeződött';
 $labels['just_now'] = ' Just Now';
 $labels['min_ago'] = ' percekkel ezelőtt';
 $labels['hr_ago'] = ' egy órája';
+$labels['websites'] = 'Weboldalak';
+$labels['running'] = 'Futás ...';
+$labels['checking'] = 'Ellenőrzés ...';
+$labels['reloading'] = 'Újratöltés ...';
+$labels['edit_config'] = 'Konfiguráció szerkesztése';
+$labels['edit_config_hint'] = 'Szerkessze a config.inc.php fájlt ehhez a pluginhoz';
 ?>

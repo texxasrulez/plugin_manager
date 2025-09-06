@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Мениджър на плъгини';
-$labels['plugin_manager_desc'] = 'Проверява инсталираните приставки на Roundcube и проверява за актуализации.';
+$labels['plugin_manager_desc'] = 'Plugin Manager проверява плъгините за актуализации. Той инсталира и създава резервни копия, за да можете да ги възстановите при необходимост.';
 $labels['plugin'] = 'Плъгин';
 $labels['directory'] = 'Директория';
 $labels['enabled'] = 'Разрешено';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Завършване на груповото 
 $labels['just_now'] = ' Точно сега';
 $labels['min_ago'] = ' преди малко';
 $labels['hr_ago'] = ' преди час';
+$labels['websites'] = 'Уебсайтове';
+$labels['running'] = 'Работещи ...';
+$labels['checking'] = 'Проверка на ...';
+$labels['reloading'] = 'Презареждане...';
+$labels['edit_config'] = 'Редактиране на конфигурацията';
+$labels['edit_config_hint'] = 'Редактиране на config.inc.php за тази приставка';
 ?>

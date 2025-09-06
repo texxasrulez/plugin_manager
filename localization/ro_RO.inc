@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Manager de pluginuri';
-$labels['plugin_manager_desc'] = 'Inspectează pluginurile Roundcube instalate și verifică dacă există actualizări.';
+$labels['plugin_manager_desc'] = 'Plugin Manager verifică dacă există actualizări pentru pluginuri. Instalează și creează copii de rezervă, astfel încât să puteți restaura dacă este necesar.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Director';
 $labels['enabled'] = 'Activat';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Actualizarea în bloc finalizată';
 $labels['just_now'] = ' Chiar acum';
 $labels['min_ago'] = ' acum un minut';
 $labels['hr_ago'] = ' acum o oră';
+$labels['websites'] = 'Site-uri web';
+$labels['running'] = 'Rularea ...';
+$labels['checking'] = 'Verificarea ...';
+$labels['reloading'] = 'Reîncărcare ...';
+$labels['edit_config'] = 'Editează configurația';
+$labels['edit_config_hint'] = 'Editați config.inc.php pentru acest plugin';
 ?>

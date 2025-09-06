@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Gerenciador de plug-ins';
-$labels['plugin_manager_desc'] = 'Inspeciona os plug-ins do Roundcube instalados e verifica se há atualizações.';
+$labels['plugin_manager_desc'] = 'O Plugin Manager verifica se há atualizações nos plug-ins. Ele instala e cria backups para que você possa restaurá-los, se necessário.';
 $labels['plugin'] = 'Plug-in';
 $labels['directory'] = 'Diretório';
 $labels['enabled'] = 'Ativado';
@@ -72,4 +72,10 @@ $labels['bulk_update_complete'] = 'Atualização em massa concluída';
 $labels['just_now'] = ' Agora mesmo';
 $labels['min_ago'] = ' min atrás';
 $labels['hr_ago'] = ' hora atrás';
+$labels['websites'] = 'Sites da Web';
+$labels['running'] = 'Correndo ...';
+$labels['checking'] = 'Verificação ...';
+$labels['reloading'] = 'Recarga ...';
+$labels['edit_config'] = 'Editar configuração';
+$labels['edit_config_hint'] = 'Edite o config.inc.php para esse plug-in';
 ?>
