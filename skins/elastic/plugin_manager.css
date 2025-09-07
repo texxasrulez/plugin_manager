@@ -29,7 +29,7 @@ a.listitem.plugin_manager .icon,
 .listitem.plugin_manager .icon,
 a.plugin_manager .icon,
 li.plugin_manager > a > .icon {
-  background-image: url('./images/pm_link_inactive.png') !important;
+  background-image: url('./images/plugin_manager.svg') !important;
 }
 
 /* Active/hovered/selected state icon */
@@ -42,7 +42,7 @@ a.listitem.plugin_manager:hover .icon,
 li.plugin_manager > a.selected > .icon,
 li.plugin_manager > a:focus > .icon,
 li.plugin_manager > a:hover > .icon {
-  background-image: url('./images/pm_link_active.png') !important;
+  background-image: url('./images/plugin_manager_act.svg') !important;
 }
 
 /* Base table behavior */

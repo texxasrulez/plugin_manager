@@ -15,7 +15,7 @@ a[href*="_action=plugin.plugin_manager"] .icon {
 #settings-sections li.plugin_manager > a,
 a.listitem.plugin_manager,
 li.plugin_manager > a {
-  background-image: url('./images/plugin_manager.png') !important;
+  background-image: url('./images/plugin_manager.svg') !important;
   background-repeat: no-repeat !important;
   background-position: 8px center !important;
   background-size: 22px 22px !important;
@@ -31,14 +31,14 @@ a.listitem.plugin_manager:hover,
 li.plugin_manager > a.selected,
 li.plugin_manager > a:focus,
 li.plugin_manager > a:hover {
-  background-image: url('./images/plugin_manager_act.png') !important;
+  background-image: url('./images/plugin_manager_act.svg') !important;
 }
 
 /* Fallback: if the icon span exists, ensure it shows the bitmap */
 a.plugin_manager .icon,
 li.plugin_manager > a > .icon,
 .icon.plugin_manager {
-  background-image: url('./images/plugin_manager.png') !important;
+  background-image: url('./images/plugin_manager.svg') !important;
   background-repeat: no-repeat !important;
   background-position: center center !important;
   background-size: 22px 22px !important;
