@@ -12,21 +12,6 @@ a[href*="_action=plugin.plugin_manager"] .icon {
   background-size: 22px 22px !important;
 }
 
-
-/* Elastic skin: Roundcube uses masked SVG icons; disable mask and use our bitmap instead */
-a.listitem.plugin_manager .icon,
-.listitem.plugin_manager .icon,
-a.plugin_manager .icon,
-li.plugin_manager > a > .icon,
-.icon.plugin_manager {
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-size: 22px 22px !important;
-  opacity: 1 !important;
-}
-
 /* Default/inactive icon */
 a.listitem.plugin_manager .icon,
 .listitem.plugin_manager .icon,
