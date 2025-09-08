@@ -1,4 +1,7 @@
 /* === Plugin Manager: enforce custom icon in Settings menu === */
+.listing.iconized li.plugin_manager > a:before {
+  content: "\f085"
+}
 
 /* Fallback selector in case class assignment varies across skins */
 a[href*="_action=plugin.plugin_manager"] .icon {
