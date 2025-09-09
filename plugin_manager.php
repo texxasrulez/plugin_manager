@@ -479,7 +479,35 @@ return $args;
             $toggle_label = $this->remote_checks ? $this->gettext('disable_remote') : $this->gettext('enable_remote');
             $h[] = '<a class="button" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>($this->remote_checks?0:1))) . '">' . rcube::Q($toggle_label) . '</a>' .
                    ' <a class="button pm-refresh" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '" onclick="this.textContent=\'Checking ...\'; this.classList.add(\'pm-busy\'); this.setAttribute(\'aria-busy\',\'true\'); return true;">' . rcube::Q($this->gettext('refresh_versions')) . '</a>&nbsp;&nbsp;<span class="pm-lastupdate" style="margin:6px 0 4px 0;">' . rcube::Q($this->gettext('last_checked')) . ':&nbsp;' . ( $this->last_ts ? '<span class="pm-checked">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '<span class="pm-checked">'. rcube::Q($this->gettext('never')) .'</span>' ) . '</div>';
-            $h[] = '<script>(function(){var c=document.querySelector(".pm-scroll");if(!c)return;function fit(){var r=c.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;var h=vh - r.top - 24; if(h<200) h=200; c.style.maxHeight=h+"px";}fit(); window.addEventListener("resize", fit);})();</script>';
+            $h[] = <<<'JS'
+<script>
+(function(){
+  function fit(){
+    var c = document.querySelector(".pm-scroll");
+    if(!c) return;
+    var rect = c.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    var padTop = parseInt(getComputedStyle(c).paddingTop, 10) || 0;
+    var padBottom = parseInt(getComputedStyle(c).paddingBottom, 10) || 0;
+    var h = Math.max(200, vh - rect.top - 8);
+    c.style.boxSizing = "border-box";
+    c.style.maxHeight = (h - padTop - padBottom) + "px";
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", fit, { once: true });
+  } else {
+    fit();
+  }
+  window.addEventListener("resize", fit, { passive: true });
+  if (typeof ResizeObserver !== "undefined") {
+    try {
+      var ro = new ResizeObserver(fit);
+      ro.observe(document.body);
+    } catch(e){}
+  }
+})();
+</script>
+JS;
 
             if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
                 $eligible = (int)$this->eligible_count();
@@ -610,7 +638,7 @@ return $args;
                     $edit_label = rcube::Q($this->gettext('edit_config'));
                     $edit_link  = ' <a href="#" class="pm-editcfg" data-plugin="' . rcube::Q(basename($r['dir'])) . '" title="' . $edit_title . '">[' . $edit_label . ']</a>';
                 }
-$h[] = '<tr' . $rowcls . '>'
+				$h[] = '<tr' . $rowcls . '>'
                         . '<td>' . rcube::Q($r['name']) . $edit_link . '</td>'
                         . '<td>' . rcube::Q($r['dir']) . '</td>'
                         . '<td data-sort="' . $en_sort . '">' . $en_html . '</td>'
@@ -621,7 +649,7 @@ $h[] = '<tr' . $rowcls . '>'
                         . '</tr>';
             }
 
-            $h[] = '</tbody></table><br />';
+            $h[] = '</tbody></table>';
             $h[] = '<script>
 			(function(){
 			  var table = document.getElementById("pm-table");

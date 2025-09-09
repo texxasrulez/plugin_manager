@@ -38,7 +38,15 @@ li.plugin_manager > a:hover > .icon {
 .records-table#pm-table th { white-space: nowrap; }
 .records-table#pm-table td:nth-child(1) { white-space: normal; }
 
-.pm-scroll { max-height: calc(100vh - 140px); overflow: auto; padding-bottom: 24px; }
+.pm-scroll { 
+  max-height: calc(100vh - 140px); /* fallback */
+  max-height: calc(100dvh - 140px); /* modern dynamic viewport */
+  overflow: auto;
+  padding-bottom: 48px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
 #pm-table { width: 100%; }
 #pm-table .hint { color: #666; font-size: 11px; margin-left: 4px; }
 
