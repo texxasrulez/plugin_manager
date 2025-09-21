@@ -1,722 +1,218 @@
+/* Plugin Manager UI (ACE editor + CSRF-safe I/O)
+   - Opens ACE modal to edit config files
+   - GET loads config from config.inc.php (fallback .dist/.sample)
+   - POST saves to config.inc.php
+   - Adds Roundcube CSRF token to all requests
+   - Uses Roundcube toasts with translatable messages
+*/
 
-// /*__PM_ACE_SET_THEME_GUARD__*/
-(function(){
-  try {
-    var Editor = ace.require('ace/editor').Editor;
-    var _orig = Editor.prototype.setTheme;
-    Editor.prototype.setTheme = function(name){
-      try {
-        var env = (window.rcmail && rcmail.env) || {};
-        var selected = (env.pm_ace_theme != null ? env.pm_ace_theme : 'dracula') + '';
-        var light = (env.pm_ace_light_theme || 'monokai') + '';
-        var dark  = (env.pm_ace_dark_theme  || 'monokai') + '';
-        var desired = selected === 'auto'
-          ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? dark : light)
-          : selected;
-        // normalize
-        desired = (desired||'').toLowerCase().replace(/[\s-]+/g,'_');
-        var aliases = {'solarizeddark':'solarized_dark','solarizedlight':'solarized_light','tomorrownight':'tomorrow_night'};
-        if (aliases[desired]) desired = aliases[desired];
-        // if someone tries to force monokai but config wants something else, redirect
-        if ((name === 'ace/theme/monokai' || name === 'monokai') && desired && desired !== 'monokai') {
-          name = 'ace/theme/' + desired;
+(function () {
+  const RC = window.rcmail || window.rcmail || {};
+  const TOKEN = (RC.env && RC.env.request_token) ? RC.env.request_token : null;
+  const COMM = (RC.env && RC.env.comm_path) ? RC.env.comm_path : (window.location.search || '');
+  function t(key, fallback) {
+    try {
+      if (RC.gettext) {
+        // Try plugin domain first
+        const msg = RC.gettext(key, 'plugin_manager');
+        if (msg && msg !== key) return msg;
+        // Try without domain (core)
+        const core = RC.gettext(key);
+        if (core && core !== key) return core;
+      }
+    } catch (e) {}
+    return fallback || key;
+  }
+
+  function toast(message, type) {
+    if (RC.display_message) {
+      // Roundcube v1.5+: display_message(msg, type, timeout)
+      RC.display_message(String(message), String(type || 'notice'), 4000);
+      return;
+    }
+    if (RC.show_message) { // older API
+      RC.show_message(String(message), String(type || 'notice'));
+      return;
+    }
+    // fallback
+    (type === 'error') ? alert(message) : console.log('[PM]', type || 'notice', message);
+  }
+
+  function buildUrl(action, params) {
+    const u = new URL(window.location.href);
+    // Keep base path, rebuild query
+    const qs = new URLSearchParams(COMM && COMM.startsWith('?') ? COMM.slice(1) : (COMM || ''));
+    if (!qs.get('_task')) qs.set('_task', 'settings');
+    qs.set('_action', action);
+    if (TOKEN && !qs.get('_token')) qs.set('_token', TOKEN);
+    if (params) {
+      Object.keys(params).forEach(k => {
+        if (params[k] !== undefined && params[k] !== null) qs.set(k, params[k]);
+      });
+    }
+    u.search = '?' + qs.toString();
+    return u.toString();
+  }
+
+  function jsonOrText(resp) {
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return resp.json();
+    return resp.text().then(t => {
+      // try JSON anyway
+      try { return JSON.parse(t); } catch (e) { return { ok:false, _raw:t, _nonjson:true }; }
+    });
+  }
+
+  function showModal(title, initial, onSave) {
+    // modal compatible with Roundcube markup, narrower sizing
+    let wrap = document.getElementById('pm-ace-modal');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = 'pm-ace-modal';
+      wrap.style.position = 'fixed';
+      wrap.style.inset = '10vh 10vw';           // ~80vh x 80vw viewport box
+      wrap.style.maxWidth = '900px';            // cap width for narrower feel
+      wrap.style.margin = '0 auto';
+      wrap.style.background = 'var(--pm-bg, #fff)';
+      wrap.style.border = '1px solid #888';
+      wrap.style.borderRadius = '8px';
+      wrap.style.boxShadow = '0 10px 30px rgba(0,0,0,.25)';
+      wrap.style.zIndex = 9999;
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      wrap.style.overflow = 'hidden';
+      wrap.innerHTML = [
+        '<div style="padding:8px 12px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #ddd;">',
+          '<strong id="pm-ace-title" style="flex:1 1 auto; min-width:0;"></strong>',
+          '<button type="button" id="pm-ace-close" class="button">', t('close','Close') ,'</button>',
+        '</div>',
+        '<div id="pm-ace-editor" style="flex:1 1 auto; min-height: 150px; height:60vh;"></div>',
+        '<div style="padding:8px 12px; border-top:1px solid #ddd; display:flex; gap:8px; justify-content:flex-end;">',
+          '<button type="button" id="pm-ace-save" class="button main">', t('save','Save') ,'</button>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(wrap);
+      document.getElementById('pm-ace-close').addEventListener('click', () => wrap.remove());
+    }
+    document.getElementById('pm-ace-title').textContent = title || t('edit_config','Edit config');
+    const ediv = document.getElementById('pm-ace-editor');
+    ediv.textContent = initial || '';
+
+    function mountAce() {
+      if (window.ace && ediv && !ediv._ace) {
+        const editor = window.ace.edit(ediv);
+        ediv._ace = editor;
+        editor.session.setMode('ace/mode/php');
+        const theme = (RC.env && RC.env.pm_ace_theme && RC.env.pm_ace_theme !== 'auto')
+          ? RC.env.pm_ace_theme
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? (RC.env && RC.env.pm_ace_dark_theme) || 'ace/theme/dracula' : (RC.env && RC.env.pm_ace_light_theme) || 'ace/theme/github');
+        if (theme && !theme.startsWith('ace/theme/')) {
+          editor.setTheme('ace/theme/' + theme);
+        } else if (theme) {
+          editor.setTheme(theme);
         }
-      } catch(e){}
-      return _orig.call(this, name);
+        editor.setValue(initial || '', -1);
+        editor.session.setUseWrapMode(true);
+        editor.setOptions({fontSize: '12px'});
+        return editor;
+      }
+      return null;
+    }
+
+    let editor = mountAce();
+    if (!editor) {
+      // lazy load ACE from env
+      const base = (RC.env && RC.env.pm_ace_base) ? RC.env.pm_ace_base : 'plugins/plugin_manager/assets/ace';
+      const s = document.createElement('script');
+      s.src = base.replace(/\/+$/,'') + '/ace.js';
+      s.onload = () => { editor = mountAce(); };
+      document.head.appendChild(s);
+    }
+
+    const saveBtn = document.getElementById('pm-ace-save');
+    saveBtn.onclick = () => {
+      if (!editor) { toast(t('editor_not_ready','Editor not ready yet'), 'error'); return; }
+      const content = editor.getValue();
+      const old = saveBtn.textContent;
+      saveBtn.disabled = true;
+      saveBtn.textContent = t('saving','Saving...');
+      onSave(content, wrap, saveBtn, old);
     };
-  } catch(e){}
-})();
-
-// /*__PM_ACE_AMD_SHIM__*/
-(function(){ try {
-  if (window.ace) {
-    if (!window.define && ace.define)  window.define  = ace.define;
-    if (!window.require && ace.require) window.require = ace.require;
-  }
-} catch(e){} })();
-// ==== BEGIN: Ace Editor integration for Plugin Manager ====
-(function(){
-  function log(){ try { if (window.console && console.debug) console.debug.apply(console, arguments); } catch(e){} }
-  function warn(){ try { if (window.console && console.warn) console.warn.apply(console, arguments); } catch(e){} }
-
-  function loadScript(src){
-    return new Promise(function(resolve, reject){
-      var s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = function(){ resolve(src); };
-      s.onerror = function(){ reject(new Error('Failed to load ' + src)); };
-      document.head.appendChild(s);
-    });
   }
 
-  // Expose globals for debugging
-  window.pmLoadAce = function pmLoadAce(){
-    if (window.ace) return Promise.resolve('already');
-    var base = (window.rcmail && rcmail.env && rcmail.env.pm_ace_base) || 'plugins/plugin_manager/assets/ace';
-    // prefer local; fall back to CDN
-    var localAce = base.replace(/\/+$/, '') + '/ace.js';
-    var cdnBase  = 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.3/src-min-noconflict';
-    var cdnAce   = cdnBase + '/ace.js';
+  function loadConfig(plug) {
+    const url = buildUrl('plugin.plugin_manager.load_config', { _pm_plug: plug, _: Date.now() });
+    return fetch(url, {
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Roundcube-Request': '1'
+      }
+    }).then(jsonOrText);
+  }
 
-    function setBasePath(p){
-      try { ace && ace.config && ace.config.set('basePath', p); } catch(e){}
-    }
+  function saveConfig(plug, content) {
+    const url = buildUrl('plugin.plugin_manager.save_config');
+    const fd = new FormData();
+    fd.append('_pm_plug', plug);
+    fd.append('_pm_content', content);
+    if (TOKEN) fd.append('_token', TOKEN);
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Roundcube-Request': '1'
+      },
+      body: fd
+    }).then(jsonOrText);
+  }
 
-    return loadScript(localAce).then(function(){
-      setBasePath(base);
-      log('pm: ace loaded local', localAce);
-      return 'local';
-    }).catch(function(err){
-      warn('pm: local ace load failed', err);
-      return loadScript(cdnAce).then(function(){
-        setBasePath(cdnBase);
-        log('pm: ace loaded cdn', cdnAce);
-        return 'cdn';
-      });
-    });
-  };
+  function onEditClick(ev) {
+    ev.preventDefault();
+    const a = ev.currentTarget;
+    const plug = a.dataset.plug || a.getAttribute('data-plug') || a.dataset.dir || a.getAttribute('data-dir') || '';
+    if (!plug) { toast('No plugin id on link', 'error'); return; }
 
-  window.pmAttachAce = function pmAttachAce(textareaId, options){
-    options = options || {};
-    var ta = document.getElementById(textareaId);
-    if (!ta) return null;
-
-    if (ta.__pmAceAttached) return ta.__pmAceAttached;
-    var wrap = document.createElement('div');
-    wrap.id = textareaId + '-ace';
-    wrap.style.height = (ta.offsetHeight ? ta.offsetHeight+'px' : '440px');
-    wrap.style.width  = '100%';
-    wrap.style.border = '1px solid #bbb';
-    wrap.style.borderRadius = '6px';
-    ta.parentNode.insertBefore(wrap, ta);
-    ta.style.display = 'none';
-
-    var editor = ace.edit(wrap.id);
-    try {
-      editor.session.setMode('ace/mode/php');
-(function(){
-  try {
-    var env = (window.rcmail && rcmail.env) || {};
-    var selected = (env.pm_ace_theme != null ? env.pm_ace_theme : 'dracula') + '';
-    var light = (env.pm_ace_light_theme || 'monokai') + '';
-    var dark  = (env.pm_ace_dark_theme  || 'monokai') + '';
-    var themeName = selected === 'auto'
-      ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? dark : light)
-      : selected;
-    var localBase = (env.pm_ace_base) || 'plugins/plugin_manager/assets/ace';
-    var cdnBase   = 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.3/src-min-noconflict';
-    var themeUrlLocal = localBase + '/theme-' + themeName + '.js';
-    var themeUrlCdn   = cdnBase  + '/theme-' + themeName + '.js';
-    // Minimal loader if not present
-    if (typeof loadScript !== 'function') {
-      window.loadScript = function(url){
-        return new Promise(function(resolve, reject){
-          try{
-            var s = document.createElement('script');
-            s.src = url; s.async = true;
-            s.onload = function(){ resolve(); };
-            s.onerror = function(){ reject(new Error('load fail: '+url)); };
-            (document.head||document.documentElement).appendChild(s);
-          } catch(e){ reject(e); }
+    loadConfig(plug).then(j => {
+      if (!j || !j.ok) {
+        const msg = (j && j.error) ? j.error : (j && j._raw) ? j._raw : 'Load failed';
+        toast(t('config_load_failed','Load failed') + (msg ? (': ' + msg) : ''), 'error');
+        return;
+      }
+      showModal(t('edit_config','Edit config') + ': ' + plug, j.content || '', (text, modal, btn, oldLabel) => {
+        saveConfig(plug, text).then(res => {
+          if (res && res.ok) {
+            btn.textContent = t('saved','Saved');
+            toast(t('config_saved_ok','Config Saved successfully'), 'confirmation');
+            setTimeout(() => modal.remove(), 450);
+          } else {
+            const emsg = (res && (res.error || res._raw)) ? (res.error || res._raw) : '';
+            toast(t('config_save_failed','Save failed') + (emsg ? (': ' + emsg) : ''), 'error');
+            btn.disabled = false;
+            btn.textContent = oldLabel || t('save','Save');
+          }
+        }).catch(err => {
+          toast(t('config_save_failed','Save failed') + ': ' + err, 'error');
+          btn.disabled = false;
+          btn.textContent = oldLabel || t('save','Save');
         });
-      };
-    }
-    loadScript(themeUrlLocal).catch(function(){ return loadScript(themeUrlCdn); })
-      .finally(function(){ try { editor.setTheme('ace/theme/' + themeName); } catch(e){} });
-  } catch(e) {}
-})();
-
-    } catch(e){}
-    editor.setOptions({
-      showPrintMargin: true,
-      printMarginColumn: 100,
-      tabSize: 2,
-      useSoftTabs: true,
-      highlightActiveLine: true,
-      wrap: false,
-      fontSize: '13px',
-      enableBasicAutocompletion: true,
-      enableLiveAutocompletion: false
-    });
-    editor.session.setValue(ta.value || '');
-    if (options.readOnly) editor.setReadOnly(true);
-
-    function bridgeTextarea(){
-      try { ta.value = editor.getValue(); } catch(e){}
-    }
-
-    function wireSave(){
-      var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
-      if (btn && !btn.__pmAceWired){
-        btn.addEventListener('click', bridgeTextarea, {capture: true});
-        btn.__pmAceWired = true;
-      }
-    }
-    wireSave();
-    var wInt = setInterval(function(){ if (!document.body.contains(wrap)) { clearInterval(wInt); } else { wireSave(); } }, 500);
-
-    editor.commands.addCommand({
-      name: 'save',
-      bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
-      exec: function(){
-        bridgeTextarea();
-        var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
-        if (btn) btn.click();
-      }
-    });
-
-    var api = {editor: editor, textarea: ta, container: wrap};
-    ta.__pmAceAttached = api;
-    return api;
-  };
-
-  function ensureAce(){
-    var ta = document.getElementById('pm-editor');
-    if (!ta) return;
-    if (ta.__pmAceAttached) return;
-    window.pmLoadAce().then(function(){
-      var ro = !!(ta.readOnly || ta.disabled || ta.getAttribute('data-readonly') == '1');
-      window.__pmAce = window.pmAttachAce('pm-editor', {readOnly: ro});
-    }).catch(function(err){
-      warn('pm: ace not available; fallback to textarea', err);
-    });
-  }
-
-  try {
-    var mo = new MutationObserver(function(muts){
-      for (var i=0;i<muts.length;i++){
-        var m = muts[i];
-        if (m.addedNodes && m.addedNodes.length) { ensureAce(); break; }
-      }
-    });
-    mo.observe(document.body, {childList:true, subtree:true});
-  } catch(e){}
-  try { window.__pmAceInterval = setInterval(ensureAce, 400); } catch(e){}
-  setTimeout(ensureAce, 50);
-})();
-// ==== END: Ace Editor integration ====
-
-
-// --- Ace Editor integration (lazy-loaded with CDN fallback) ---
-(function(){
-  function loadScript(src){
-    return new Promise(function(resolve, reject){
-      var s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = function(){ resolve(); };
-      s.onerror = function(){ reject(new Error('Failed to load ' + src)); };
-      document.head.appendChild(s);
-    });
-  }
-  window.pmLoadAce = function(){
-    if (window.ace) return Promise.resolve();
-    var localBase = (window.rcmail && rcmail.env && rcmail.env.pm_ace_base) || 'plugins/plugin_manager/assets/ace';
-    var local = localBase + '/ace.js';
-    var cdnBase = 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.3/src-min-noconflict';
-    var cdn = cdnBase + '/ace.js';
-
-    function setBasePath(base){
-      try { window.ace && window.ace.config && ace.config.set('basePath', base); } catch(e){}
-    }
-
-    // try local first, then CDN
-    return loadScript(local).then(function(){
-      setBasePath(localBase);
-      return Promise.resolve();
-    }).catch(function(){
-      return loadScript(cdn).then(function(){
-        setBasePath(cdnBase);
-        return loadScript(cdnBase + '/ext-language_tools.js').catch(function(){ /* optional */ });
       });
+    }).catch(err => {
+      toast(t('config_load_failed','Load failed') + ': ' + err, 'error');
     });
-  };
+  }
 
-  window.pmAttachAce = function(textareaId, readOnly){
-    var ta = document.getElementById(textareaId);
-    if (!ta) return null;
-    var wrap = document.createElement('div');
-    wrap.id = textareaId + '-ace';
-    wrap.style.height = (ta.offsetHeight ? ta.offsetHeight+'px' : '440px');
-    wrap.style.width  = '100%';
-    wrap.style.border = '1px solid #bbb';
-    wrap.style.borderRadius = '6px';
-    ta.parentNode.insertBefore(wrap, ta);
-    ta.style.display = 'none';
+  function init() {
+    const links = document.querySelectorAll('.pm-edit-config');
+    links.forEach(a => {
+      a.addEventListener('click', onEditClick);
+    });
+  }
 
-    var editor = ace.edit(wrap.id);
-    try {
-      editor.session.setMode('ace/mode/php');
-(function(){
-  try {
-    var env = (window.rcmail && rcmail.env) || {};
-    var selected = (env.pm_ace_theme != null ? env.pm_ace_theme : 'dracula') + '';
-    var light = (env.pm_ace_light_theme || 'monokai') + '';
-    var dark  = (env.pm_ace_dark_theme  || 'monokai') + '';
-    var themeName = selected === 'auto'
-      ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? dark : light)
-      : selected;
-    var localBase = (env.pm_ace_base) || 'plugins/plugin_manager/assets/ace';
-    var cdnBase   = 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.3/src-min-noconflict';
-    var themeUrlLocal = localBase + '/theme-' + themeName + '.js';
-    var themeUrlCdn   = cdnBase  + '/theme-' + themeName + '.js';
-    // Minimal loader if not present
-    if (typeof loadScript !== 'function') {
-      window.loadScript = function(url){
-        return new Promise(function(resolve, reject){
-          try{
-            var s = document.createElement('script');
-            s.src = url; s.async = true;
-            s.onload = function(){ resolve(); };
-            s.onerror = function(){ reject(new Error('load fail: '+url)); };
-            (document.head||document.documentElement).appendChild(s);
-          } catch(e){ reject(e); }
-        });
-      };
-    }
-    loadScript(themeUrlLocal).catch(function(){ return loadScript(themeUrlCdn); })
-      .finally(function(){ try { editor.setTheme('ace/theme/' + themeName); } catch(e){} });
-  } catch(e) {}
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();
-
-    } catch(e){ /* fallback if modules not present */ }
-    editor.setOptions({
-      showPrintMargin: true,
-      printMarginColumn: 100,
-      tabSize: 2,
-      useSoftTabs: true,
-      highlightActiveLine: true,
-      wrap: false,
-      fontSize: '13px',
-      enableBasicAutocompletion: true,
-      enableLiveAutocompletion: false
-    });
-    editor.session.setValue(ta.value || '');
-    if (readOnly) editor.setReadOnly(true);
-
-    
-    // Keep the hidden <textarea> in sync with Ace
-    function __pmBridgeTextarea(){ try { ta.value = editor.getValue(); } catch(e){} }
-    try { editor.session.on('change', __pmBridgeTextarea); } catch(e){}
-    try {
-      var __pmPreSave = function(){ __pmBridgeTextarea(); };
-      document.addEventListener('click', function(ev){
-        var el = ev.target && ev.target.closest ? ev.target.closest('#pm-editor-save, .ui-dialog-buttonpane button, .dialog input.mainaction') : null;
-        if (el) __pmBridgeTextarea();
-      }, true);
-      if (ta.form) ta.form.addEventListener('submit', __pmPreSave, true);
-    } catch(e){}
-    editor.commands.addCommand({
-      name: 'save',
-      bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
-      exec: function(ed){
-        var btn = document.getElementById('pm-editor-save');
-        if (btn) btn.click();
-      }
-    });
-    return {editor: editor, textarea: ta, container: wrap};
-  };
-})();
-// --- end Ace Editor integration ---
-
-// --- Ace auto-attach observer ---
-(function(){
-  function ensureAce(){
-    var ta = document.getElementById('pm-editor');
-    if (!ta) return;
-    if (window.__pmAce && __pmAce.container && __pmAce.container.parentNode) return; // already attached
-    pmLoadAce().then(function(){
-      var readonly = !!(ta.readOnly || ta.disabled || ta.getAttribute('data-readonly') == '1');
-      window.__pmAce = pmAttachAce('pm-editor', readonly);
-      // try to tag the Save button for keyboard shortcut
-      var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
-      if (btn && !btn.id) btn.id = 'pm-editor-save';
-    }).catch(function(e){
-      console.warn('Ace load failed, falling back to textarea', e);
-    });
-  }
-  var mo = new MutationObserver(function(muts){
-    for (var i=0;i<muts.length;i++){
-      if (muts[i].addedNodes && muts[i].addedNodes.length) { ensureAce(); break; }
-    }
-  });
-  try { mo.observe(document.body, {childList:true, subtree:true}); } catch(e){}
-  // run once in case modal already exists
-  setTimeout(ensureAce, 50);
-})();
-// --- end Ace auto-attach observer ---
-
-
-(function(){
-  window.__pmErrors = window.__pmErrors || [];
-  window.addEventListener('error', function(e){ try{ __pmErrors.push(String(e.error || e.message || e)); }catch(_){}});
-
-  function ready(fn){ if(document.readyState!=='loading'){fn();} else {document.addEventListener('DOMContentLoaded', fn);} }
-  function q(sel, root){ return (root && root.querySelector) ? root.querySelector(sel) : document.querySelector(sel); }
-  function qa(sel, root){ return Array.prototype.slice.call((root && root.querySelectorAll) ? root.querySelectorAll(sel) : document.querySelectorAll(sel)); }
-
-  function findPluginTable(root){
-    var t = q('#pm-table', root);
-    if (t) return t;
-    var tables = qa('table', root);
-    for (var i=0;i<tables.length;i++){
-      var ths = qa('thead th', tables[i]);
-      if (ths.length < 3) continue;
-      var labels = ths.map(function(th){return (th.textContent||'').trim().toLowerCase();});
-      if (labels.indexOf('plugin')>-1 && labels.indexOf('directory')>-1 && (labels.indexOf('status')>-1 || labels.indexOf('latest version')>-1)){
-        return tables[i];
-      }
-    }
-    return null;
-  }
-
-  function getDirForRow(tr, table){
-    var d = tr.getAttribute('data-plugin') || tr.getAttribute('data-dir') || tr.getAttribute('data-name');
-    if (d) return d.trim();
-    var ths = qa('thead th', table);
-    var dirIdx = -1;
-    for (var i=0;i<ths.length;i++){
-      if ((ths[i].textContent||'').trim().toLowerCase() === 'directory') { dirIdx=i; break; }
-    }
-    if (dirIdx >= 0 && tr.children[dirIdx]){
-      return (tr.children[dirIdx].textContent||'').trim();
-    }
-    return '';
-  }
-
-  function findUpdateUrlForRow(tr){
-    var link = qa('a', tr).find(function(a){
-      var t = (a.textContent||'').trim().toLowerCase();
-      var href = a.getAttribute('href') || '';
-      return t === 'update' || /_pm_update(_plugin)?=|_pm_update=|update=/.test(href);
-    });
-    return link ? link.getAttribute('href') : null;
-  }
-
-  function ensureSelectColumnAtEnd(table){
-    var thead = q('thead', table);
-    var trh = thead ? thead.querySelector('tr') : null;
-    if (!trh) return;
-    var ths = qa('th', trh);
-    // Remove any previous leftmost "Select" we might have added
-    if (ths.length && (ths[0].textContent||'').trim().toLowerCase() === 'select'){
-      trh.removeChild(ths[0]);
-      // Also remove first cell from each body row if it only contains our checkbox
-      qa('tbody tr', table).forEach(function(tr){
-        var td = tr.firstElementChild;
-        if (!td) return;
-        var onlyCB = td.children.length===1 && td.querySelector('input.pm-select');
-        if (onlyCB) tr.removeChild(td);
-      });
-      ths = qa('th', trh);
-    }
-    // If a "Select" header already exists at the end, do nothing
-    ths = qa('th', trh);
-    var last = ths[ths.length-1];
-    if (last && (last.textContent||'').trim().toLowerCase() === 'select') return;
-
-    // Create at end
-    var selTh = document.createElement('th');
-    selTh.textContent = 'Select';
-    selTh.className = 'pm-select-th';
-    selTh.style.width = '1%';
-    trh.appendChild(selTh);
-
-    // Append cells to each row
-    qa('tbody tr', table).forEach(function(tr){
-      if (tr.querySelector('td input.pm-select')) return; // if we left some in middle (unlikely), skip
-      var tdSel = document.createElement('td');
-      var cb = document.createElement('input');
-      cb.type='checkbox'; cb.className='pm-select';
-      cb.value = getDirForRow(tr, table) || '';
-      tdSel.appendChild(cb);
-      tr.appendChild(tdSel);
-    });
-  }
-
-  function fixScroll(pluginbody){
-    var boxcontent = q('.boxcontent', pluginbody) || pluginbody;
-    boxcontent.style.overflowY = 'auto';
-    boxcontent.style.maxHeight = '';
-    setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 0);
-  }
-
-  function buildUI(){
-    var pluginbody = q('#pluginbody');
-    if (!pluginbody) return;
-
-    var bulkbar = q('.pm-bulkbar', pluginbody);
-    if (!bulkbar) return; // respect server-side hide
-
-    // Clean stray toolbars
-    qa('.pm-inline-toolbar').forEach(function(el){
-      if (!bulkbar.contains(el)) el.parentNode && el.parentNode.removeChild(el);
-    });
-    if (q('.pm-inline-toolbar', bulkbar)) return;
-
-    var table = findPluginTable(pluginbody);
-    if (!table) return;
-
-    // Put Select column at the END so native sort indices stay correct
-    ensureSelectColumnAtEnd(table);
-
-    // Build inline toolbar (no Test Updates)
-    var wrap = document.createElement('div');
-    wrap.className = 'pm-inline-toolbar';
-    wrap.style.display = 'inline-flex';
-    wrap.style.flexWrap = 'wrap';
-    wrap.style.alignItems = 'center';
-    wrap.style.gap = '12px';
-    wrap.style.marginTop = '8px';
-    wrap.style.marginBottom = '4px';
-
-    var btn = document.createElement('a');
-    btn.id = 'pm-bulk-update';
-    btn.className = 'button pm-update-all';
-    btn.href = '#';
-    btn.textContent = 'Update Selected';
-
-    var o1 = document.createElement('label');
-    o1.innerHTML = '<input type="checkbox" id="pm-filter-outdated"> Only outdated';
-    var o2 = document.createElement('label');
-    o2.innerHTML = '<input type="checkbox" id="pm-filter-enabled"> Only enabled';
-    var o3 = document.createElement('label');
-    o3.innerHTML = '<input type="checkbox" id="pm-filter-errors"> Only errors';
-
-    wrap.appendChild(btn);
-    wrap.appendChild(o1);
-    wrap.appendChild(o2);
-    wrap.appendChild(o3);
-    bulkbar.appendChild(wrap);
-
-    // Bulk update via per-row Update links (sequential fetch)
-    btn.addEventListener('click', function(ev){
-      ev.preventDefault();
-      var rows = qa('tbody tr', table).filter(function(tr){
-        var cb = tr.querySelector('input.pm-select');
-        return cb && cb.checked;
-      });
-      if (!rows.length){ alert('Select at least one plugin'); return; }
-      btn.textContent = 'Updating...'; btn.style.pointerEvents = 'none';
-
-      var queue = rows.map(function(tr){
-        var url = findUpdateUrlForRow(tr);
-        if (url) return url;
-        var dir = getDirForRow(tr, table);
-        if (dir) return '?_task=settings&_action=plugin.plugin_manager&_pm_update=' + encodeURIComponent(dir);
-        return null;
-      }).filter(Boolean);
-
-      (function next(){
-        if (!queue.length){ window.location.reload(); return; }
-        var url = queue.shift();
-        fetch(url, { credentials: 'same-origin' }).then(function(){ next(); }).catch(function(){ next(); });
-      })();
-    });
-
-    // Scroll fix
-    fixScroll(pluginbody);
-  }
-
-  ready(buildUI);
-})();
-
-// === Plugin Manager: inline config editor ===
-(function(){
-  function ready(fn){ if(document.readyState!=='loading'){fn();} else {document.addEventListener('DOMContentLoaded', fn);} }
-  function dlg(html){
-    var d = document.createElement('div');
-    d.id = 'pm-config-modal';
-    d.style.position='fixed'; d.style.left='0'; d.style.top='0'; d.style.right='0'; d.style.bottom='0';
-    d.style.background='rgba(0,0,0,0.35)'; d.style.zIndex='9999'; d.style.display='flex'; d.style.alignItems='center'; d.style.justifyContent='center';
-    d.innerHTML = '<div style="background:#fff; max-width:900px; width:90%; padding:16px; box-shadow:0 8px 30px rgba(0,0,0,.3); border-radius:8px;">'
-      + '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">'
-      +   '<strong>Edit config.inc.php</strong>'
-      +   '<button id="pm-close" class="btn btn-secondary" style="margin-left:8px;">Close</button>'
-      + '</div>'
-      + '<div id="pm-msg" style="color:#b00; margin:6px 0; display:none;"></div>'
-      + '<textarea id="pm-text" spellcheck="false" style="width:100%; height:420px; font-family:monospace; font-size:12px;"></textarea>'
-      + '<div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">'
-      +   '<button id="pm-save" class="btn btn-primary" id="pm-editor-save">Save</button>'
-      +   '<button id="pm-cancel" class="btn">Cancel</button>'
-      + '</div>'
-      + '</div>';
-    document.body.appendChild(d);
-    return d;
-  }
-  function showMsg(d, t){ var m=d.querySelector('#pm-msg'); m.textContent=t||''; m.style.display = t? 'block':'none'; }
-  ready(function(){
-    document.addEventListener('click', function(ev){
-      var a = ev.target.closest && ev.target.closest('a.pm-editcfg');
-      if (!a) return;
-      ev.preventDefault();
-      var plug = a.getAttribute('data-plugin');
-      var url = (rcmail && rcmail.env && rcmail.env.comm_path ? rcmail.env.comm_path : window.location.pathname + '?_task=settings');
-      url += '&_remote=1&_action=plugin.plugin_manager.load_config&_plugin=plugin_manager&_pm_plug=' + encodeURIComponent(plug) + '&_token=' + encodeURIComponent(rcmail.env.request_token || '');
-      fetch(url, {credentials:'same-origin'}).then(function(r){
-        return r.text().then(function(t){
-          try { return {ok: r.ok, json: JSON.parse(t)}; } catch(e){ throw new Error('HTTP '+r.status+' '+r.statusText+' | Body: ' + t.slice(0,200)); }
-        });
-      }).then(function(resp){
-        var j = resp.json;
-
-        if (!j || !j.ok) { console.error('pm load_config server json', j); throw new Error((j && j.error) || 'Failed to load'); }
-        var d = dlg();
-        var ta = d.querySelector('#pm-text');
-        ta.value = j.content || '';
-        // Attach Ace editor to overlay textarea
-        try { pmLoadAce(function(){}); } catch(e) {}
-        pmLoadAce().then(function() {
-          try {
-            if (window.__pmAce && window.__pmAce.textarea && window.__pmAce.textarea !== ta) {
-              try { window.__pmAce.editor.destroy(); } catch(e){}
-              try { if (window.__pmAce.container && window.__pmAce.container.parentNode) window.__pmAce.container.parentNode.removeChild(window.__pmAce.container); } catch(e){}
-              try { if (window.__pmAce.textarea) window.__pmAce.textarea.style.display = ''; } catch(e){}
-              window.__pmAce = null;
-            }
-            window.__pmAce = pmAttachAce('pm-text', { readOnly: false });
-          } catch(e) {}
-        });
-
-        var close = function(){
-  try {
-    if (window.__pmAce && window.__pmAce.container) {
-      try { window.__pmAce.editor.destroy(); } catch(e){}
-      try { if (window.__pmAce.container.parentNode) window.__pmAce.container.parentNode.removeChild(window.__pmAce.container); } catch(e){}
-      try { if (window.__pmAce.textarea) window.__pmAce.textarea.style.display = ''; } catch(e){}
-    }
-    window.__pmAce = null;
-  } catch(e) {}
-  d.remove();
-};
-        d.querySelector('#pm-close').onclick = close;
-        d.querySelector('#pm-cancel').onclick = close;
-        d.addEventListener('click', function(e){ if (e.target === d) close(); });
-        d.querySelector('#pm-save').onclick = function(){
-          showMsg(d, '');
-          var data = new URLSearchParams();
-          data.set('_pm_plug', plug);
-          var _val = (window.__pmAce && window.__pmAce.editor) ? window.__pmAce.editor.getValue() : ta.value;
-          data.set('_pm_content', _val);
-          data.set('_token', (rcmail.env && rcmail.env.request_token) || '');
-          var post = (rcmail && rcmail.env && rcmail.env.comm_path ? rcmail.env.comm_path : window.location.pathname + '?_task=settings');
-          post += '&_remote=1&_action=plugin.plugin_manager.save_config&_plugin=plugin_manager';
-          fetch(post, {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:String(data)})
-            .then(function(r){
-              return r.text().then(function(t){
-                try { return {ok:r.ok, json: JSON.parse(t)}; } catch(e){ throw new Error('HTTP '+r.status+' '+r.statusText+' | Body: ' + t.slice(0,200)); }
-              });
-            })
-            .then(function(resp){
-              var j2 = resp.json;
-              if (!j2 || !j2.ok) { console.error('pm save_config server json', j2); throw new Error((j2 && j2.error) || 'Save failed'); }
-              close();
-              if (window.rcmail && rcmail.display_message) {
-                rcmail.display_message('Config Saved Successfully', 'confirmation');
-              }
-            })
-            .catch(function(err){
-              showMsg(d, String(err && err.message || err));
-            });
-        };
-      }).catch(function(err){ console.error('pm load_config error', err);
-        alert('Failed to load config: ' + String(err && err.message || err));
-      });
-    });
-  });
-})();
-
-
-// --- Ace auto-attach observer + interval ---
-(function(){
-  function ensureAce(){
-    var ta = document.getElementById('pm-editor');
-    if (!ta) return;
-    if (window.__pmAce && __pmAce.container && __pmAce.container.parentNode) return; // already attached
-    if (!window.pmLoadAce || !window.pmAttachAce) return;
-    window.pmLoadAce().then(function(){
-      var readonly = !!(ta.readOnly || ta.disabled || ta.getAttribute('data-readonly') == '1');
-      window.__pmAce = pmAttachAce('pm-editor', readonly);
-      var btn = document.getElementById('pm-editor-save') || document.getElementById('pm-save') || document.querySelector('.dialog input[type="button"][value="Save"], .dialog input.mainaction, .ui-dialog-buttonpane button');
-      if (btn && !btn.id) btn.id = 'pm-editor-save';
-    }).catch(function(e){ /* silent fallback */ });
-  }
-  try { window.__pmAceInterval = window.setInterval(ensureAce, 400); } catch(e){}
-  try {
-    var mo = new MutationObserver(function(muts){
-      for (var i=0;i<muts.length;i++){
-        if (muts[i].addedNodes && muts[i].addedNodes.length) { ensureAce(); break; }
-      }
-    });
-    mo.observe(document.body, {childList:true, subtree:true});
-  } catch(e) {}
-  setTimeout(ensureAce, 50);
-})();
-// --- end Ace auto-attach ---
-
-
-// Kick once on load if Ace already present (preloaded)
-try { if (window.ace) { (function(){ 
-  var t = setInterval(function(){ 
-    var el = document.getElementById('pm-editor'); 
-    if (el) { try { window.pmAttachAce && window.pmAttachAce('pm-editor', {readOnly: !!(el.readOnly||el.disabled||el.getAttribute('data-readonly')=='1')}); } catch(e){} clearInterval(t); } 
-  }, 300);
-})(); } } catch(e) {}
-
-
-// === PM Ace hardening ===
-(function(){
-  function pm_bridge_readonly(ta){
-    return !!(ta.readOnly || ta.disabled || ta.getAttribute('data-readonly') == '1');
-  }
-  function pm_try_attach(){
-    try {
-      var ta = document.getElementById('pm-editor') 
-            || (function(){ 
-                  var d = document.querySelector('.ui-dialog, .dialog'); 
-                  if (!d) return null; 
-                  return d.querySelector('textarea'); 
-               })();
-      if (!ta) return false;
-      if (ta.__pmAceAttached) return true;
-      if (!window.ace || !window.pmAttachAce) return false;
-      // Ensure element has an id
-      if (!ta.id) ta.id = 'pm-editor';
-      window.__pmAce = window.pmAttachAce(ta.id, {readOnly: pm_bridge_readonly(ta)});
-      return !!window.__pmAce;
-    } catch(e){ return false; }
-  }
-
-  // Burst timer when user clicks edit-config links
-  document.addEventListener('click', function(ev){
-    var t = ev.target && (ev.target.closest && ev.target.closest('.pm-edit-config,[data-pm-edit]'));
-    if (!t) return;
-    var end = Date.now() + 8000;
-    var burst = setInterval(function(){
-      if (pm_try_attach() || Date.now()>end) clearInterval(burst);
-    }, 150);
-  }, true);
-
-  // Persistent pump: small interval that gives multiple chances
-  try {
-    var ticks = 0;
-    var pump = setInterval(function(){
-      if (pm_try_attach()) { clearInterval(pump); return; }
-      if (++ticks > 120) clearInterval(pump); // ~24s
-    }, 200);
-  } catch(e){}
-
-  // Mutation observer
-  try {
-    var mo = new MutationObserver(function(muts){
-      for (var i=0;i<muts.length;i++){
-        if (muts[i].addedNodes && muts[i].addedNodes.length) {
-          if (pm_try_attach()) break;
-        }
-      }
-    });
-    mo.observe(document.body, {childList:true, subtree:true});
-  } catch(e){}
-})();
-// === end PM Ace hardening ===

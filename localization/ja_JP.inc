@@ -78,4 +78,17 @@ $labels['checking'] = 'チェック ...';
 $labels['reloading'] = 'リローディング ...';
 $labels['edit_config'] = '編集設定';
 $labels['edit_config_hint'] = 'このプラグインのconfig.inc.phpを編集する。';
+$labels['update_selected'] = 'アップデート';
+$labels['only_outdated'] = '時代遅れ';
+$labels['only_enabled'] = 'のみ有効';
+$labels['only_errors'] = 'エラーのみ';
+$labels['via'] = '経由';
+$labels['close'] = '閉じる';
+$labels['config_saved_ok'] = '設定の保存に成功';
+$labels['config_save_failed'] = 'コンフィグ保存失敗';
+$labels['config_load_failed'] = '設定のロードに失敗';
+$labels['editor_not_ready'] = 'エディターの準備が整っていない';
+$labels['save'] = 'セーブ';
+$labels['saved'] = '保存';
+$labels['saving'] = '節約 ...';
 ?>

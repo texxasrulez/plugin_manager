@@ -78,4 +78,17 @@ $labels['checking'] = '확인 중 ...';
 $labels['reloading'] = '로딩 중 ...';
 $labels['edit_config'] = '구성 편집';
 $labels['edit_config_hint'] = '이 플러그인의 config.inc.php를 편집합니다';
+$labels['update_selected'] = '선택된 업데이트';
+$labels['only_outdated'] = '오래된 것만';
+$labels['only_enabled'] = '활성화된 경우에만';
+$labels['only_errors'] = '오류만';
+$labels['via'] = '경유';
+$labels['close'] = '닫기';
+$labels['config_saved_ok'] = '구성이 성공적으로 저장되었습니다';
+$labels['config_save_failed'] = '구성 저장 실패';
+$labels['config_load_failed'] = '구성 로드 실패';
+$labels['editor_not_ready'] = '편집기가 준비되지 않았습니다';
+$labels['save'] = '저장';
+$labels['saved'] = '저장됨';
+$labels['saving'] = '저장 ...';
 ?>

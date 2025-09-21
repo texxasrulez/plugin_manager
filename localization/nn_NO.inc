@@ -78,4 +78,17 @@ $labels['checking'] = 'Sjekker ...';
 $labels['reloading'] = 'Omlading ...';
 $labels['edit_config'] = 'Rediger konfigurasjon';
 $labels['edit_config_hint'] = 'Rediger config.inc.php for dette tillegget';
+$labels['update_selected'] = 'Oppdatering valgt';
+$labels['only_outdated'] = 'Bare utdatert';
+$labels['only_enabled'] = 'Kun aktivert';
+$labels['only_errors'] = 'Kun feil';
+$labels['via'] = 'via';
+$labels['config_saved_ok'] => 'Konfigurasjonen er lagret';
+$labels['config_save_failed'] => 'Lagring av konfigurasjon mislyktes';
+$labels['config_load_failed'] => 'Konfigurasjonsinnlasting mislyktes';
+$labels['editor_not_ready'] => 'Redaktøren er ikke klar';
+$labels['saving'] => 'Lagrer ... ';
+$labels['saved'] => 'Lagret';
+$labels['close'] => 'Lukke';
+$labels['save'] => 'Spare';
 ?>

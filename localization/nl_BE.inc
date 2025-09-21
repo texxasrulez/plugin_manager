@@ -78,4 +78,17 @@ $labels['checking'] = 'Controleren ...';
 $labels['reloading'] = 'Herladen ...';
 $labels['edit_config'] = 'Configuratie bewerken';
 $labels['edit_config_hint'] = 'Bewerk config.inc.php voor deze plugin';
+$labels['update_selected'] = 'Geselecteerde update';
+$labels['only_outdated'] = 'Alleen verouderd';
+$labels['only_enabled'] = 'Alleen ingeschakeld';
+$labels['only_errors'] = 'Alleen fouten';
+$labels['via'] = 'via';
+$labels['close'] = 'Sluit';
+$labels['config_saved_ok'] = 'Configuratie succesvol opgeslagen';
+$labels['config_save_failed'] = 'Config opslaan mislukt';
+$labels['config_load_failed'] = 'Configuratie laden mislukt';
+$labels['editor_not_ready'] = 'Editor niet klaar';
+$labels['save'] = 'Sla';
+$labels['saved'] = 'Opgeslagen';
+$labels['saving'] = 'Besparen ...';
 ?>

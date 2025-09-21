@@ -78,4 +78,17 @@ $labels['checking'] = 'Pārbaude ...';
 $labels['reloading'] = 'Pārlāde...';
 $labels['edit_config'] = 'Konfigurācijas rediģēšana';
 $labels['edit_config_hint'] = 'Rediģēt config.inc.php šim spraudnim';
+$labels['update_selected'] = 'Atjaunināt atlasīto';
+$labels['only_outdated'] = 'Tikai novecojušas';
+$labels['only_enabled'] = 'Ieslēgts tikai';
+$labels['only_errors'] = 'Tikai kļūdas';
+$labels['via'] = 'izmantojot';
+$labels['close'] = 'Aizvērt';
+$labels['config_saved_ok'] = 'Konfigurācija veiksmīgi saglabāta';
+$labels['config_save_failed'] = 'Konfigurācijas saglabāšana neizdevās';
+$labels['config_load_failed'] = 'Konfigurācijas ielāde neizdevās';
+$labels['editor_not_ready'] = 'Redaktors nav gatavs';
+$labels['save'] = 'Saglabāt';
+$labels['saved'] = 'Saglabāts';
+$labels['saving'] = 'Ietaupot ...';
 ?>

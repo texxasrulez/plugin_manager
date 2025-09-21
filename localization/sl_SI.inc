@@ -78,4 +78,17 @@ $labels['checking'] = 'Preverjanje ...';
 $labels['reloading'] = 'Prelivanje ...';
 $labels['edit_config'] = 'Urejanje konfiguracije';
 $labels['edit_config_hint'] = 'Uredite config.inc.php za ta vtičnik';
+$labels['update_selected'] = 'Posodobitev izbranih';
+$labels['only_outdated'] = 'Samo zastarelo';
+$labels['only_enabled'] = 'Samo omogočeno';
+$labels['only_errors'] = 'Samo napake';
+$labels['via'] = 'prek';
+$labels['close'] = 'Zapri';
+$labels['config_saved_ok'] = 'Konfiguracija uspešno shranjena';
+$labels['config_save_failed'] = 'Shranjevanje konfiguracije ni uspelo';
+$labels['config_load_failed'] = 'Nalaganje konfiguracije ni uspelo';
+$labels['editor_not_ready'] = 'Urednik ni pripravljen';
+$labels['save'] = 'Shrani';
+$labels['saved'] = 'Shranjeno';
+$labels['saving'] = 'Varčevanje...';
 ?>

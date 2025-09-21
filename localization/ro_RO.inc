@@ -78,4 +78,17 @@ $labels['checking'] = 'Verificarea ...';
 $labels['reloading'] = 'Reîncărcare ...';
 $labels['edit_config'] = 'Editează configurația';
 $labels['edit_config_hint'] = 'Editați config.inc.php pentru acest plugin';
+$labels['update_selected'] = 'Actualizare selectată';
+$labels['only_outdated'] = 'Numai învechite';
+$labels['only_enabled'] = 'Numai activat';
+$labels['only_errors'] = 'Numai erori';
+$labels['via'] = 'prin';
+$labels['close'] = 'Închidere';
+$labels['config_saved_ok'] = 'Configurație salvată cu succes';
+$labels['config_save_failed'] = 'Salvarea configurației a eșuat';
+$labels['config_load_failed'] = 'Încărcarea configurației a eșuat';
+$labels['editor_not_ready'] = 'Editorul nu este pregătit';
+$labels['save'] = 'Salvați';
+$labels['saved'] = 'Salvat';
+$labels['saving'] = 'Economisirea ...';
 ?>

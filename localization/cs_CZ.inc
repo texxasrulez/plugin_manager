@@ -78,4 +78,17 @@ $labels['checking'] = 'Kontrola ...';
 $labels['reloading'] = 'Přebíjení...';
 $labels['edit_config'] = 'Upravit konfiguraci';
 $labels['edit_config_hint'] = 'Úprava souboru config.inc.php pro tento zásuvný modul';
+$labels['update_selected'] = 'Aktualizace vybraných';
+$labels['only_outdated'] = 'Pouze zastaralé';
+$labels['only_enabled'] = 'Pouze povoleno';
+$labels['only_errors'] = 'Pouze chyby';
+$labels['via'] = 'přes';
+$labels['close'] = 'Zavřít';
+$labels['config_saved_ok'] = 'Konfigurace úspěšně uložena';
+$labels['config_save_failed'] = 'Uložení konfigurace se nezdařilo';
+$labels['config_load_failed'] = 'Načtení konfigurace se nezdařilo';
+$labels['editor_not_ready'] = 'Editor není připraven';
+$labels['save'] = 'Uložit';
+$labels['saved'] = 'Uloženo';
+$labels['saving'] = 'Úspora ...';
 ?>

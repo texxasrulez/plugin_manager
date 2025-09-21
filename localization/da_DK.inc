@@ -78,4 +78,17 @@ $labels['checking'] = 'Tjekker ...';
 $labels['reloading'] = 'Genopladning ...';
 $labels['edit_config'] = 'Rediger konfiguration';
 $labels['edit_config_hint'] = 'Rediger config.inc.php for dette plugin';
+$labels['update_selected'] = 'Opdatering af udvalgte';
+$labels['only_outdated'] = 'Kun forældet';
+$labels['only_enabled'] = 'Kun aktiveret';
+$labels['only_errors'] = 'Kun fejl';
+$labels['via'] = 'via';
+$labels['close'] = 'Luk';
+$labels['config_saved_ok'] = 'Konfig gemt med succes';
+$labels['config_save_failed'] = 'Gemning af konfiguration mislykkedes';
+$labels['config_load_failed'] = 'Indlæsning af konfiguration mislykkedes';
+$labels['editor_not_ready'] = 'Redaktør ikke klar';
+$labels['save'] = 'Gemme';
+$labels['saved'] = 'Gemt';
+$labels['saving'] = 'Sparer ...';
 ?>

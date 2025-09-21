@@ -78,4 +78,17 @@ $labels['checking'] = 'Patikrinkite ...';
 $labels['reloading'] = 'Perkrovimo ...';
 $labels['edit_config'] = 'Redaguoti konfigūraciją';
 $labels['edit_config_hint'] = 'Redaguokite šio įskiepio config.inc.php';
+$labels['update_selected'] = 'Atnaujinti pasirinktą';
+$labels['only_outdated'] = 'Tik pasenęs';
+$labels['only_enabled'] = 'Tik įjungta';
+$labels['only_errors'] = 'Tik klaidos';
+$labels['via'] = 'per';
+$labels['close'] = 'Uždaryti';
+$labels['config_saved_ok'] = 'Konfigūracija sėkmingai išsaugota';
+$labels['config_save_failed'] = 'Konfigūracijos išsaugojimas nepavyko';
+$labels['config_load_failed'] = 'Konfigūracijos įkėlimas nepavyko';
+$labels['editor_not_ready'] = 'Redaktorius nepasirengęs';
+$labels['save'] = 'Išsaugoti';
+$labels['saved'] = 'Išsaugota';
+$labels['saving'] = 'Taupymas...';
 ?>

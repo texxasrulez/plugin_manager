@@ -78,4 +78,17 @@ $labels['checking'] = 'Kontrol ...';
 $labels['reloading'] = 'Yeniden doldurma ...';
 $labels['edit_config'] = 'Yapılandırmayı düzenle';
 $labels['edit_config_hint'] = 'Bu eklenti için config.inc.php dosyasını düzenleyin';
+$labels['update_selected'] = 'Güncelleme Seçildi';
+$labels['only_outdated'] = 'Sadece modası geçmiş';
+$labels['only_enabled'] = 'Yalnızca etkin';
+$labels['only_errors'] = 'Sadece hatalar';
+$labels['via'] = 'üzerinden';
+$labels['close'] = 'Kapat';
+$labels['config_saved_ok'] = 'Yapılandırma başarıyla kaydedildi';
+$labels['config_save_failed'] = 'Yapılandırma kaydetme başarısız oldu';
+$labels['config_load_failed'] = 'Yapılandırma yüklemesi başarısız oldu';
+$labels['editor_not_ready'] = 'Editör hazır değil';
+$labels['save'] = 'Kaydet';
+$labels['saved'] = 'Kurtarıldı';
+$labels['saving'] = 'Tasarruf ...';
 ?>

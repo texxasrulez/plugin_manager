@@ -78,4 +78,17 @@ $labels['checking'] = 'Tarkistaminen ...';
 $labels['reloading'] = 'Uudelleenlataus ...';
 $labels['edit_config'] = 'Muokkaa konfiguraatiota';
 $labels['edit_config_hint'] = 'Muokkaa config.inc.php:tä tätä laajennusta varten';
+$labels['update_selected'] = 'Päivitys Valittu';
+$labels['only_outdated'] = 'Vain vanhentunut';
+$labels['only_enabled'] = 'Vain käytössä';
+$labels['only_errors'] = 'Vain virheet';
+$labels['via'] = 'kautta';
+$labels['close'] = 'Sulje';
+$labels['config_saved_ok'] = 'Config tallennettu onnistuneesti';
+$labels['config_save_failed'] = 'Konfiguraation tallennus epäonnistui';
+$labels['config_load_failed'] = 'Konfiguraation lataus epäonnistui';
+$labels['editor_not_ready'] = 'Editor ei ole valmis';
+$labels['save'] = 'Tallenna';
+$labels['saved'] = 'Tallennettu';
+$labels['saving'] = 'Säästö ...';
 ?>

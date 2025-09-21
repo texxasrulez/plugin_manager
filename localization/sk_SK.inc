@@ -78,4 +78,17 @@ $labels['checking'] = 'Kontrola ...';
 $labels['reloading'] = 'Prebíjanie...';
 $labels['edit_config'] = 'Upraviť konfiguráciu';
 $labels['edit_config_hint'] = 'Úprava súboru config.inc.php pre tento zásuvný modul';
+$labels['update_selected'] = 'Aktualizácia vybraných';
+$labels['only_outdated'] = 'Iba zastarané';
+$labels['only_enabled'] = 'Iba povolené';
+$labels['only_errors'] = 'Iba chyby';
+$labels['via'] = 'cez';
+$labels['close'] = 'Zatvoriť';
+$labels['config_saved_ok'] = 'Konfigurácia úspešne uložená';
+$labels['config_save_failed'] = 'Uloženie konfigurácie zlyhalo';
+$labels['config_load_failed'] = 'Načítanie konfigurácie zlyhalo';
+$labels['editor_not_ready'] = 'Editor nie je pripravený';
+$labels['save'] = 'Uložiť';
+$labels['saved'] = 'Uložené';
+$labels['saving'] = 'Úspora ...';
 ?>

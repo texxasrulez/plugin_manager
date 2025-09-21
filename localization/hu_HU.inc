@@ -1,7 +1,7 @@
 <?php
 $labels = array();
 $labels['plugin_manager_title'] = 'Plugin menedzser';
-$labels['plugin_manager_desc'] = 'A Plugin Manager ellenőrzi a pluginok frissítését. Telepíti és biztonsági mentéseket készít, így szükség esetén visszaállíthatja.';
+$labels['plugin_manager_desc'] = 'A Plugin Manager ellenőrzi a pluginek frissítését. Telepíti és biztonsági mentéseket készít, így szükség esetén visszaállíthatja.';
 $labels['plugin'] = 'Plugin';
 $labels['directory'] = 'Címtár';
 $labels['enabled'] = 'Engedélyezve';
@@ -78,4 +78,17 @@ $labels['checking'] = 'Ellenőrzés ...';
 $labels['reloading'] = 'Újratöltés ...';
 $labels['edit_config'] = 'Konfiguráció szerkesztése';
 $labels['edit_config_hint'] = 'Szerkessze a config.inc.php fájlt ehhez a pluginhoz';
+$labels['update_selected'] = 'Kiválasztott frissítés';
+$labels['only_outdated'] = 'Csak elavult';
+$labels['only_enabled'] = 'Csak engedélyezve';
+$labels['only_errors'] = 'Csak hibák';
+$labels['via'] = 'via';
+$labels['close'] = 'Zárja be a';
+$labels['config_saved_ok'] = 'Konfiguráció sikeresen mentve';
+$labels['config_save_failed'] = 'A konfiguráció mentése sikertelen';
+$labels['config_load_failed'] = 'A konfiguráció betöltése sikertelen';
+$labels['editor_not_ready'] = 'Szerkesztő nem kész';
+$labels['save'] = 'Mentés';
+$labels['saved'] = 'Megmentett';
+$labels['saving'] = 'Megtakarítás ...';
 ?>

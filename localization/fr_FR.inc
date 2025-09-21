@@ -78,4 +78,17 @@ $labels['checking'] = 'Vérification ...';
 $labels['reloading'] = 'Rechargement ...';
 $labels['edit_config'] = 'Modifier la configuration';
 $labels['edit_config_hint'] = 'Modifier le fichier config.inc.php pour ce plugin';
+$labels['update_selected'] = 'Mise à jour sélectionnée';
+$labels['only_outdated'] = 'Seulement périmé';
+$labels['only_enabled'] = 'Uniquement activé';
+$labels['only_errors'] = 'Seules les erreurs';
+$labels['via'] = 'via';
+$labels['close'] = 'Fermer';
+$labels['config_saved_ok'] = 'La configuration a été sauvegardée avec succès';
+$labels['config_save_failed'] = 'L\'enregistrement de la configuration a échoué';
+$labels['config_load_failed'] = 'Échec du chargement de la configuration';
+$labels['editor_not_ready'] = 'L\'éditeur n\'est pas prêt';
+$labels['save'] = 'Économiser';
+$labels['saved'] = 'Sauvegardé';
+$labels['saving'] = 'Économiser ...';
 ?>

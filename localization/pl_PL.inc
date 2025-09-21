@@ -78,4 +78,17 @@ $labels['checking'] = 'Sprawdzanie ...';
 $labels['reloading'] = 'Przeładunek ...';
 $labels['edit_config'] = 'Edytuj konfigurację';
 $labels['edit_config_hint'] = 'Edytuj config.inc.php dla tej wtyczki';
+$labels['update_selected'] = 'Wybrane aktualizacje';
+$labels['only_outdated'] = 'Tylko nieaktualne';
+$labels['only_enabled'] = 'Tylko włączone';
+$labels['only_errors'] = 'Tylko błędy';
+$labels['via'] = 'za pośrednictwem';
+$labels['close'] = 'Zamknij';
+$labels['config_saved_ok'] = 'Konfiguracja zapisana pomyślnie';
+$labels['config_save_failed'] = 'Zapis konfiguracji nie powiódł się';
+$labels['config_load_failed'] = 'Ładowanie konfiguracji nie powiodło się';
+$labels['editor_not_ready'] = 'Edytor nie jest gotowy';
+$labels['save'] = 'Zapisz';
+$labels['saved'] = 'Zapisane';
+$labels['saving'] = 'Oszczędzanie ...';
 ?>

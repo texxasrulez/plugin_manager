@@ -78,4 +78,17 @@ $labels['checking'] = '检查 ...';
 $labels['reloading'] = '重装 ...';
 $labels['edit_config'] = '编辑配置';
 $labels['edit_config_hint'] = '为该插件编辑 config.inc.php';
+$labels['update_selected'] => '更新所选内容';
+$labels['only_outdated'] => '只是过时了';
+$labels['only_enabled'] => '仅启用';
+$labels['only_errors'] => '只有错误';
+$labels['via'] => '通过';
+$labels['config_saved_ok'] => '配置保存成功';
+$labels['config_save_failed'] => '配置保存失败';
+$labels['config_load_failed'] => '配置加载失败';
+$labels['editor_not_ready'] => '编辑器尚未准备好';
+$labels['saving'] => '保存 ... ';
+$labels['saved'] => '已保存';
+$labels['close'] => '关闭';
+$labels['save'] => '节省';
 ?>

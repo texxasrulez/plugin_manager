@@ -78,4 +78,17 @@ $labels['checking'] = 'Проверка на ...';
 $labels['reloading'] = 'Презареждане...';
 $labels['edit_config'] = 'Редактиране на конфигурацията';
 $labels['edit_config_hint'] = 'Редактиране на config.inc.php за тази приставка';
+$labels['update_selected'] = 'Актуализиране на избраните';
+$labels['only_outdated'] = 'Само остарели';
+$labels['only_enabled'] = 'Само разрешени';
+$labels['only_errors'] = 'Само грешки';
+$labels['via'] = 'чрез';
+$labels['close'] = 'Затвори';
+$labels['config_saved_ok'] = 'Конфигурацията е записана успешно';
+$labels['config_save_failed'] = 'Запазването на конфигурацията е неуспешно';
+$labels['config_load_failed'] = 'Зареждането на конфигурацията е неуспешно';
+$labels['editor_not_ready'] = 'Редакторът не е готов';
+$labels['save'] = 'Запазете';
+$labels['saved'] = 'Запазено';
+$labels['saving'] = 'Спестяване на ...';
 ?>

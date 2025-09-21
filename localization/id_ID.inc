@@ -78,4 +78,17 @@ $labels['checking'] = 'Memeriksa ...';
 $labels['reloading'] = 'Memuat ulang ...';
 $labels['edit_config'] = 'Edit konfigurasi';
 $labels['edit_config_hint'] = 'Edit config.inc.php untuk plugin ini';
+$labels['update_selected'] = 'Pembaruan Dipilih';
+$labels['only_outdated'] = 'Hanya ketinggalan jaman';
+$labels['only_enabled'] = 'Hanya diaktifkan';
+$labels['only_errors'] = 'Hanya kesalahan';
+$labels['via'] = 'melalui';
+$labels['close'] = 'Tutup';
+$labels['config_saved_ok'] = 'Konfigurasi berhasil disimpan';
+$labels['config_save_failed'] = 'Penyimpanan konfigurasi gagal';
+$labels['config_load_failed'] = 'Pemuatan konfigurasi gagal';
+$labels['editor_not_ready'] = 'Editor belum siap';
+$labels['save'] = 'Simpan';
+$labels['saved'] = 'Tersimpan';
+$labels['saving'] = 'Menyimpan ...';
 ?>

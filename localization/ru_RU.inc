@@ -78,4 +78,17 @@ $labels['checking'] = 'Проверка ...';
 $labels['reloading'] = 'Перезарядка ...';
 $labels['edit_config'] = 'Редактирование конфигурации';
 $labels['edit_config_hint'] = 'Отредактируйте файл config.inc.php для этого плагина';
+$labels['update_selected'] = 'Обновить выбранное';
+$labels['only_outdated'] = 'Только устаревшие';
+$labels['only_enabled'] = 'Только включенный';
+$labels['only_errors'] = 'Только ошибки';
+$labels['via'] = 'через';
+$labels['config_saved_ok'] => 'Конфигурация успешно сохранена';
+$labels['config_save_failed'] => 'Не удалось сохранить конфигурацию';
+$labels['config_load_failed'] => 'Загрузка конфигурации не удалась';
+$labels['editor_not_ready'] => 'Редактор не готов';
+$labels['saving'] => 'Сохранение ... ';
+$labels['saved'] => 'Сохранено';
+$labels['close'] => 'Закрывать';
+$labels['save'] => 'Сохранять';
 ?>
