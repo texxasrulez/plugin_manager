@@ -10,7 +10,7 @@ $config['pm_plugin_root'] = null;             // override plugins root dir (null
 $config['pm_update_channel'] = 'release';     // 'release' or 'dev'
 
 // ===== Bulk update =====
-$config['pm_enable_update_select'] = false;       // show top-level "Update Selected" button
+$config['pm_enable_update_select'] = true;       // show top-level "Update Selected" button
 
 // true = write central data/version.json on init; set false to only refresh on pm_end_update()
 $config['pm_write_central_on_init'] = true;
