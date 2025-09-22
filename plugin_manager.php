@@ -342,9 +342,9 @@ class plugin_manager extends rcube_plugin
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('plugin')) . '</th>'
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('directory')) . '</th>'
              . '<th class="pm-sort" data-type="bool" style="text-align:left;">' . rcube::Q($this->gettext('enabled')) . ' / ' . rcube::Q($this->gettext('disabled')) .'</th>'
-             . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('status')) . '</th>'
+             . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('version_remote')) . '</th>'
              . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('version_local')) . '</th>'
-             . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('version_remote')) . '</th>'
+             . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('status')) . '</th>'
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('websites')) . '</th>'
              . '</tr></thead><tbody>';
 
