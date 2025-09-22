@@ -237,7 +237,7 @@ class plugin_manager extends rcube_plugin
             #pm-table td:nth-child(1), #pm-table th:nth-child(1) { width: ' . rcube::Q($select_w) . '; }
             #pm-table td:nth-child(5), #pm-table th:nth-child(5) { width: ' . rcube::Q($local_w) . '; }
             #pm-table td:nth-child(6), #pm-table th:nth-child(6) { width: ' . rcube::Q($latest_w) . '; }
-            #pm-table td:nth-child(7), #pm-table th:nth-child(7) { width: ' . rcube::Q($status_w) . '; white-space: nowrap; }
+            #pm-table td:nth-child(7), #pm-table th:nth-child(7) { width: ' . rcube::Q($status_w) . '; }
             .pm-busy{opacity:.65;pointer-events:none;}
             .pm-ok{color:#1b5e20;}
             .pm-update{color:#8b0000;}
