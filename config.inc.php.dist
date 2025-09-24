@@ -32,10 +32,14 @@ $config['pm_update_admins'] = [1];            // only these Roundcube user IDs s
 
 // ===== UI niceties =====
 $config['pm_column_widths'] = [
-  'select' => '4%',
-  'local'  => '8%',
+  'select' => '3%',
+  'plugin'  => '20%',
+  'directory' => '15%',
+  'enable_disable' => '10%',
   'latest' => '10%',
+  'local'  => '12%',
   'status' => '15%',
+  'website' => '15%',
 ];
 
 // ===== Backups & retention =====

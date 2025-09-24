@@ -62,10 +62,6 @@ li.plugin_manager > a > .icon,
 
 .pm-bundled{opacity:.9}
 
-/* === Plugin Manager: sticky table header (neutral colors; use skin defaults) === */
-.pm-scroll {
-  overflow-y: auto; /* scrolling is confined to the plugin list */
-}
 .pm-scroll thead th {
   position: sticky;
   top: 0;
@@ -151,14 +147,15 @@ html.dark-mode .records-table#pm-table tbody tr:nth-child(even) {
 
 /* Remote Checkig off decoration */
 .remote-off {
+  margin: 6px 0;
   display: inline-block;        /* shrink to fit text */
-  padding: 6px 10px;            /* spacing around text */
-  border: 2px solid #ff0000;    /* red outline */
-  background-color: #ffe2e2;    /* light red background */
-  color: #ff0000;               /* red text */
+  padding: 4px 4px;            /* spacing around text */
+  border: 2px solid #8b0000;    /* red outline */
+  background-color: #ffcccc;    /* light red background */
+  color: #8b0000;               /* red text */
   font-size: 10px;				/* font size */
   font-weight: bold;            /* make text stand out */
-  border-radius: 10px;          /* slightly rounded corners */
+  border-radius: 4px;          /* slightly rounded corners */
 }
 
 /* Various colors */
@@ -187,4 +184,22 @@ content:" \25BC";
 .pm-ok {
 font-weight:bold;
 color:#03780b;
+}
+
+.pm-busy {
+opacity: .65;
+pointer-events: none;
+}
+
+th.pm-sort {
+  cursor: pointer;
+  user-select:none;
+}
+
+th.pm-sort.pm-sorted-asc::after {
+  content:" \\25B2";
+}
+
+th.pm-sort.pm-sorted-desc::after {
+  content:" \\25BC";
 }

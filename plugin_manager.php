@@ -226,24 +226,26 @@ class plugin_manager extends rcube_plugin
         }
 
         $this->include_stylesheet($this->local_skin_path() . '/plugin_manager.css');
-        $cw = (array)$this->config->get('pm_column_widths', array('select'=>'4%','local'=>'8%','latest'=>'8%','status'=>'30%'));
-        $select_w  = isset($cw['select']) ? $cw['select'] : '4%';
+        $cw = (array)$this->config->get('pm_column_widths', array('select'=>'3%','plugin'=>'20%','directory'=>'15%','enable_disable'=>'10%','latest'=>'8%','local'=>'8%','status'=>'18%','website'=>'18%'));
+        $select_w  = isset($cw['select']) ? $cw['select'] : '3%';
+        $plugin_w  = isset($cw['plugin'])  ? $cw['plugin']  : '20%';
+        $directory_w  = isset($cw['directory'])  ? $cw['directory']  : '15%';
+        $enable_disable_w  = isset($cw['enable_disable'])  ? $cw['enable_disable']  : '10%';
         $local_w  = isset($cw['local'])  ? $cw['local']  : '8%';
         $latest_w = isset($cw['latest']) ? $cw['latest'] : '8%';
-        $status_w = isset($cw['status']) ? $cw['status'] : '30%';
+        $status_w = isset($cw['status']) ? $cw['status'] : '18%';
+        $website_w = isset($cw['website']) ? $cw['website'] : '18%';
 
         $this->rc->output->add_header('<style>
             #pm-table { table-layout:auto; }
             #pm-table td:nth-child(1), #pm-table th:nth-child(1) { width: ' . rcube::Q($select_w) . '; }
+            #pm-table td:nth-child(5), #pm-table th:nth-child(2) { width: ' . rcube::Q($plugin_w) . '; }
+            #pm-table td:nth-child(5), #pm-table th:nth-child(3) { width: ' . rcube::Q($directory_w) . '; }
+            #pm-table td:nth-child(5), #pm-table th:nth-child(4) { width: ' . rcube::Q($enable_disable_w) . '; }
             #pm-table td:nth-child(5), #pm-table th:nth-child(5) { width: ' . rcube::Q($local_w) . '; }
             #pm-table td:nth-child(6), #pm-table th:nth-child(6) { width: ' . rcube::Q($latest_w) . '; }
             #pm-table td:nth-child(7), #pm-table th:nth-child(7) { width: ' . rcube::Q($status_w) . '; }
-            .pm-busy{opacity:.65;pointer-events:none;}
-            .pm-ok{color:#1b5e20;}
-            .pm-update{color:#8b0000;}
-            .pm-enabled{color:#1b5e20;font-weight:bold;}
-            .pm-disabled{color:#8b0000;font-weight:bold;}
-            .pm-scroll{overflow:auto;height:1px;}
+            #pm-table td:nth-child(7), #pm-table th:nth-child(8) { width: ' . rcube::Q($website_w) . '; }
             th.pm-sort{cursor:pointer;user-select:none;}
             th.pm-sort.pm-sorted-asc::after{content:" \\25B2";}
             th.pm-sort.pm-sorted-desc::after{content:" \\25BC";}
@@ -309,8 +311,8 @@ class plugin_manager extends rcube_plugin
         $h[] = '<div class="boxcontent">';
         $h[] = '<p class="pm-desc" style="text-align:left;">' . rcube::Q($this->gettext('plugin_manager_desc')) . '</p>';
         if ($this->debug) {
-            $h[] = '<div class="pm-debug" style="margin:6px 0; display: inline-block; border:2px solid #8b0000; border-radius:4px; background-color:#ffcccc; color:#8b0000; padding:4px;"><strong>'
-                . rcube::Q($this->gettext('debug_on')) . '</strong>. '
+            $h[] = '<div class="pm-debug remote-off">'
+                . rcube::Q($this->gettext('debug_on')) . '. '
                 . rcube::Q($this->gettext('debug_on_text')) . '</div>';
         }    
 
@@ -342,8 +344,8 @@ class plugin_manager extends rcube_plugin
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('plugin')) . '</th>'
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('directory')) . '</th>'
              . '<th class="pm-sort" data-type="bool" style="text-align:left;">' . rcube::Q($this->gettext('enabled')) . ' / ' . rcube::Q($this->gettext('disabled')) .'</th>'
-             . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('version_remote')) . '</th>'
              . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('version_local')) . '</th>'
+             . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('version_remote')) . '</th>'
              . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('status')) . '</th>'
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('websites')) . '</th>'
              . '</tr></thead><tbody>';
