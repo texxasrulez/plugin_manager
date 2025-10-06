@@ -1,7 +1,5 @@
 # Plugin Manager for Roundcube
 
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/texxasrulez/plugin_manager/frontend/master?style=flat-square&label=build%20frontend)](https://github.com/texxasrulez/plugin_manager/actions)
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/texxasrulez/plugin_manager/backend/master?style=flat-square&label=build%20backend)](https://github.com/texxasrulez/plugin_manager/actions)
 [![Packagist](https://img.shields.io/packagist/dt/texxasrulez/plugin_manager?style=flat-square)](https://packagist.org/packages/texxasrulez/plugin_manager)
 [![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=flat-square)](https://packagist.org/packages/texxasrulez/plugin_manager)
 [![Project license](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=flat-square)](https://github.com/texxasrulez/plugin_manager/LICENSE)
