@@ -1,5 +1,12 @@
-
 # Plugin Manager for Roundcube
+
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/texxasrulez/plugin-plugin_manager/frontend/master?style=flat-square&label=build%20frontend)](https://github.com/texxasrulez/plugin-plugin_manager/actions)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/texxasrulez/plugin-plugin_manager/backend/master?style=flat-square&label=build%20backend)](https://github.com/texxasrulez/plugin-plugin_manager/actions)
+[![Packagist](https://img.shields.io/packagist/dt/texxasrulez/plugin_manager?style=flat-square)](https://packagist.org/packages/texxasrulez/plugin_manager)
+[![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=flat-square)](https://packagist.org/packages/texxasrulez/plugin_manager)
+[![Project license](https://img.shields.io/github/license/texxasrulez/plugin-plugin_manager?style=flat-square)](https://github.com/texxasrulez/plugin-plugin_manager/blob/v6/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin-plugin_manager?style=flat-square&logo=github)](https://github.com/texxasrulez/plugin-plugin_manager/stargazers)
+[![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-blue.svg?style=flat-square&logo=paypal)](https://www.paypal.me/texxasrulez)
 
 Lists installed plugins, shows local vs latest versions, and highlights **Update available**. Works with Larry, Elastic, and custom skins.
 
