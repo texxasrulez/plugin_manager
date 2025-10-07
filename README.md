@@ -1,12 +1,12 @@
 # Plugin Manager for Roundcube
 
-[![Packagist](https://img.shields.io/packagist/dt/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=FFED29)](https://packagist.org/packages/texxasrulez/plugin_manager)
-[![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=plastic&logo=packagist&logoColor=white&labelColor=blue&color=50C878)](https://packagist.org/packages/texxasrulez/plugin_manager)
-[![Project license](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=orange)](https://github.com/texxasrulez/plugin_manager/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=white)](https://github.com/texxasrulez/plugin_manager/stargazers)
-[![issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=8FD9FB)](https://github.com/texxasrulez/plugin_manager/issues)
-![GitHub forks](https://img.shields.io/github/forks/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=orange)
-[![Donate to this project using Paypal](https://img.shields.io/badge/paypal-money_please-blue.svg?style=plastic&labelColor=blue&color=2E6F40&logo=paypal)](https://www.paypal.me/texxasrulez)
+[![Packagist](https://img.shields.io/packagist/dt/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=gold)](https://packagist.org/packages/texxasrulez/plugin_manager)
+[![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=plastic&logo=packagist&logoColor=white&labelColor=blue&color=mediumspringgreen)](https://packagist.org/packages/texxasrulez/plugin_manager)
+[![Project license](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=coral)](https://github.com/texxasrulez/plugin_manager/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=deepskyblue)](https://github.com/texxasrulez/plugin_manager/stargazers)
+[![issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=aqua)](https://github.com/texxasrulez/plugin_manager/issues)
+![GitHub forks](https://img.shields.io/github/forks/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=darkorange)
+[![Donate to this project using Paypal](https://img.shields.io/badge/paypal-money_please-blue.svg?style=plastic&labelColor=blue&color=forestgreen&logo=paypal)](https://www.paypal.me/texxasrulez)
 
 Lists installed plugins, shows local vs latest versions, and highlights **Update available**. Works with Larry, Elastic, and custom skins.
 
