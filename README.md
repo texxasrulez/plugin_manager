@@ -4,7 +4,7 @@
 [![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=plastic&logo=packagist&logoColor=white)](https://packagist.org/packages/texxasrulez/plugin_manager)
 [![Project license](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=plastic)](https://github.com/texxasrulez/plugin_manager/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin_manager?style=plastic&logo=github)](https://github.com/texxasrulez/plugin_manager/stargazers)
-[![issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager)](https://github.com/texxasrulez/plugin_manager/issues)
+[![issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager?style=plastic)](https://github.com/texxasrulez/plugin_manager/issues)
 [![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-blue.svg?style=plastic&logo=paypal)](https://www.paypal.me/texxasrulez)
 
 Lists installed plugins, shows local vs latest versions, and highlights **Update available**. Works with Larry, Elastic, and custom skins.
