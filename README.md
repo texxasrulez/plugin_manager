@@ -1,7 +1,7 @@
 # Plugin Manager for Roundcube
 
-[![Packagist](https://img.shields.io/packagist/dt/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=yellow)](https://packagist.org/packages/texxasrulez/plugin_manager)
-[![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=plastic&logo=packagist&logoColor=white&labelColor=blue&color=2E6F40)](https://packagist.org/packages/texxasrulez/plugin_manager)
+[![Packagist](https://img.shields.io/packagist/dt/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=FFED29)](https://packagist.org/packages/texxasrulez/plugin_manager)
+[![Packagist Version](https://img.shields.io/packagist/v/texxasrulez/plugin_manager?style=plastic&logo=packagist&logoColor=white&labelColor=blue&color=50C878)](https://packagist.org/packages/texxasrulez/plugin_manager)
 [![Project license](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=orange)](https://github.com/texxasrulez/plugin_manager/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=white)](https://github.com/texxasrulez/plugin_manager/stargazers)
 [![issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=8FD9FB)](https://github.com/texxasrulez/plugin_manager/issues)
