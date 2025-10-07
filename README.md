@@ -5,6 +5,7 @@
 [![Project license](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=coral)](https://github.com/texxasrulez/plugin_manager/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=deepskyblue)](https://github.com/texxasrulez/plugin_manager/stargazers)
 [![issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager?style=plastic&labelColor=blue&color=aqua)](https://github.com/texxasrulez/plugin_manager/issues)
+![GitHub contributors](https://img.shields.io/github/contributors/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=orchid)
 ![GitHub forks](https://img.shields.io/github/forks/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=darkorange)
 [![Donate to this project using Paypal](https://img.shields.io/badge/paypal-money_please-blue.svg?style=plastic&labelColor=blue&color=forestgreen&logo=paypal)](https://www.paypal.me/texxasrulez)
 
