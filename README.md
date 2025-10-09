@@ -5,8 +5,8 @@
 [![Github License](https://img.shields.io/github/license/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=coral)](https://github.com/texxasrulez/plugin_manager/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=deepskyblue)](https://github.com/texxasrulez/plugin_manager/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/texxasrulez/plugin_manager?style=plastic&logo=github&labelColor=blue&color=aqua)](https://github.com/texxasrulez/plugin_manager/issues)
-[![GitHub Contributors](https://img.shields.io/github/contributors/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=orchid)](https://github.com/texxasrulez/plugin_manager/graphs/contributors)
-[![GitHub Forks](https://img.shields.io/github/forks/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=darkorange)](https://github.com/texxasrulez/plugin_manager/forks)
+[![GitHub Contributors](https://img.shields.io/github/Contributors/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=orchid)](https://github.com/texxasrulez/plugin_manager/graphs/contributors)
+[![GitHub Forks](https://img.shields.io/github/Forks/texxasrulez/plugin_manager?style=plastic&logo=github&logoColor=white&labelColor=blue&color=darkorange)](https://github.com/texxasrulez/plugin_manager/forks)
 [![Donate Paypal](https://img.shields.io/badge/paypal-Money_Please-blue.svg?style=plastic&labelColor=blue&color=forestgreen&logo=paypal)](https://www.paypal.me/texxasrulez)
 
 Lists installed plugins, shows local vs latest versions, and highlights **Update available**.
