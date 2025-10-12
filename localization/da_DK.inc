@@ -16,7 +16,7 @@ $labels['up_to_date'] = 'Op til dato';
 $labels['update_available'] = 'Opdatering tilgængelig';
 $labels['updateall'] = 'Opdater alle plugins';
 $labels['update_all'] = 'Opdater alle';
-$labels['updating'] = 'Opdatering';
+$labels['updating'] = 'Opdatering ...';
 $labels['updating_all'] = 'Opdatering af alle';
 $labels['not_checked'] = 'Ikke kontrolleret';
 $labels['refresh'] = 'Opdatering';
@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Redaktør ikke klar';
 $labels['save'] = 'Gemme';
 $labels['saved'] = 'Gemt';
 $labels['saving'] = 'Sparer ...';
+$labels['bundled'] = 'Samlet';
 ?>

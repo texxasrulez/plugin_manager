@@ -1,6 +1,7 @@
 <?php
 $labels = [
   'bulk_update_complete' 	=> 'Bulk update complete',
+  'bundled'					=> 'Bundled',
   'checking'    			=> 'Checking ... ',
   'close'					=> 'Close',
   'config_saved_ok'			=> 'Config saved successfully',

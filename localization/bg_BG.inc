@@ -16,7 +16,7 @@ $labels['up_to_date'] = 'Актуално';
 $labels['update_available'] = 'Налична е актуализация';
 $labels['updateall'] = 'Актуализиране на всички плъгини';
 $labels['update_all'] = 'Актуализиране на всички';
-$labels['updating'] = 'Актуализиране на';
+$labels['updating'] = 'Актуализиране на ...';
 $labels['updating_all'] = 'Актуализиране на всички';
 $labels['not_checked'] = 'Не е проверено';
 $labels['refresh'] = 'Обновяване';
@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Редакторът не е готов';
 $labels['save'] = 'Запазете';
 $labels['saved'] = 'Запазено';
 $labels['saving'] = 'Спестяване на ...';
+$labels['bundled'] = 'Пакет';
 ?>

@@ -16,7 +16,7 @@ $labels['up_to_date'] = 'Al día';
 $labels['update_available'] = 'Actualización disponible';
 $labels['updateall'] = 'Actualizar todos los plugins';
 $labels['update_all'] = 'Actualizar todo';
-$labels['updating'] = 'Actualización de';
+$labels['updating'] = 'Actualización ...';
 $labels['updating_all'] = 'Actualizar todo';
 $labels['not_checked'] = 'No comprobado';
 $labels['refresh'] = 'Actualizar';
@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'El editor no está listo';
 $labels['save'] = 'Guardar';
 $labels['saved'] = 'Guardado';
 $labels['saving'] = 'Ahorrar ...';
+$labels['bundled'] = 'Paquete';
 ?>

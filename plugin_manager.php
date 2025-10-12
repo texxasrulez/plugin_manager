@@ -583,7 +583,49 @@ class plugin_manager extends rcube_plugin
                 $out['github'] = rtrim($m3[0], '/');
             }
         }
-        return $out;
+        // Overlay with sources.map.php if present
+try {
+    $base = null;
+    if (!empty($meta['mainfile'])) {
+        $dir = dirname($meta['mainfile']);
+        $base = basename($dir);
+    }
+    $map = $this->get_sources_map();
+    if ($base && is_array($map) && isset($map[$base]) && is_array($map[$base])) {
+        $ov = $map[$base];
+        // bundled flag
+        if (array_key_exists('bundled', $ov)) {
+            $out['bundled'] = !empty($ov['bundled']);
+        }
+        // explicit composer_name override
+        if (!empty($ov['composer_name'])) {
+            $out['composer_name'] = (string)$ov['composer_name'];
+            $out['packagist'] = 'https://packagist.org/packages/' . rawurlencode($out['composer_name']);
+        }
+        // explicit packagist override (allow short vendor/name or full URL)
+        if (!empty($ov['packagist'])) {
+            if (preg_match('~^https?://~i', $ov['packagist'])) {
+                $out['packagist'] = $ov['packagist'];
+            } else {
+                $out['packagist'] = 'https://packagist.org/packages/' . rawurlencode($ov['packagist']);
+                if (empty($out['composer_name'])) {
+                    $out['composer_name'] = (string)$ov['packagist'];
+                }
+            }
+        }
+        // explicit github override (allow owner/repo or full URL)
+        if (!empty($ov['github'])) {
+            if (preg_match('~^https?://~i', $ov['github'])) {
+                $out['github'] = rtrim($ov['github'], '/');
+            } else {
+                $out['github'] = 'https://github.com/' . trim($ov['github'], '/');
+            }
+        }
+    }
+} catch (\Throwable $e) {
+    // do not break discovery if map overlay fails
+}
+return $out;
     }
 
     private function latest_version_cached($sources, $force=false)
@@ -1329,5 +1371,35 @@ class plugin_manager extends rcube_plugin
         }
         return $result;
     }
+
+
+/**
+ * Load sources map from sources.map.php (plugin root or config/) with caching.
+ * The file should return an associative array mapping source keys to definitions.
+ */
+private function get_sources_map(): array
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $file = __DIR__ . '/sources.map.php';
+    if (is_readable($file)) {
+        $map = include $file;
+        if (is_array($map)) {
+            $cache = $map;
+            return $cache;
+        }
+    }
+    return $cache ?? [];
 }
-?>
+    
+
+/**
+ * Public accessor for sources map for use across plugin components/templates.
+ */
+public function get_sources(): array
+{
+    return $this->get_sources_map();
+}
+}

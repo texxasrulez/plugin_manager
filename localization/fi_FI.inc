@@ -16,7 +16,7 @@ $labels['up_to_date'] = 'Ajan tasalla';
 $labels['update_available'] = 'Päivitys saatavilla';
 $labels['updateall'] = 'Päivitä kaikki lisäosat';
 $labels['update_all'] = 'Päivitä kaikki';
-$labels['updating'] = 'Päivittäminen';
+$labels['updating'] = 'Päivittäminen ...';
 $labels['updating_all'] = 'Kaikkien päivittäminen';
 $labels['not_checked'] = 'Ei tarkistettu';
 $labels['refresh'] = 'Päivitä';
@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Editor ei ole valmis';
 $labels['save'] = 'Tallenna';
 $labels['saved'] = 'Tallennettu';
 $labels['saving'] = 'Säästö ...';
+$labels['bundled'] = 'Niputettu';
 ?>

@@ -16,7 +16,7 @@ $labels['up_to_date'] = 'Aktuální';
 $labels['update_available'] = 'K dispozici je aktualizace';
 $labels['updateall'] = 'Aktualizace všech zásuvných modulů';
 $labels['update_all'] = 'Aktualizovat vše';
-$labels['updating'] = 'Aktualizace stránek';
+$labels['updating'] = 'Aktualizace ...';
 $labels['updating_all'] = 'Aktualizace všech';
 $labels['not_checked'] = 'Nebylo zkontrolováno';
 $labels['refresh'] = 'Obnovit';
@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Editor není připraven';
 $labels['save'] = 'Uložit';
 $labels['saved'] = 'Uloženo';
 $labels['saving'] = 'Úspora ...';
+$labels['bundled'] = 'Svazek';
 ?>
