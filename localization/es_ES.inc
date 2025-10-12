@@ -91,5 +91,5 @@ $labels['editor_not_ready'] = 'El editor no está listo';
 $labels['save'] = 'Guardar';
 $labels['saved'] = 'Guardado';
 $labels['saving'] = 'Ahorrar ...';
-$labels['bundled'] = 'Paquete';
+$labels['bundled'] = 'Combinado con Roundcube';
 ?>

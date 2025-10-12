@@ -91,4 +91,5 @@ $labels['saving'] = 'Lagrer ... ';
 $labels['saved'] = 'Lagret';
 $labels['close'] = 'Lukke';
 $labels['save'] = 'Spare';
+$labels['bundled'] = 'Leveres sammen med Roundcube';
 ?>

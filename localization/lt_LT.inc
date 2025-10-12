@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Redaktorius nepasirengęs';
 $labels['save'] = 'Išsaugoti';
 $labels['saved'] = 'Išsaugota';
 $labels['saving'] = 'Taupymas...';
+$labels['bundled'] = 'Kartu su Roundcube';
 ?>

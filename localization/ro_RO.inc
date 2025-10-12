@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Editorul nu este pregătit';
 $labels['save'] = 'Salvați';
 $labels['saved'] = 'Salvat';
 $labels['saving'] = 'Economisirea ...';
+$labels['bundled'] = 'În pachet cu Roundcube';
 ?>

@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Editor niet klaar';
 $labels['save'] = 'Sla';
 $labels['saved'] = 'Opgeslagen';
 $labels['saving'] = 'Besparen ...';
+$labels['bundled'] = 'Gebundeld met Roundcube';
 ?>

@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'エディターの準備が整っていない';
 $labels['save'] = 'セーブ';
 $labels['saved'] = '保存';
 $labels['saving'] = '節約 ...';
+$labels['bundled'] = 'Roundcubeとバンドル';
 ?>

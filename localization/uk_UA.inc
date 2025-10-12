@@ -91,4 +91,5 @@ $labels['saving'] = 'Збереження ... ';
 $labels['saved'] = 'Збережено';
 $labels['close'] = 'Закрити';
 $labels['save'] = 'зберегти';
+$labels['bundled'] = 'У комплекті з Roundcube';
 ?>

@@ -91,5 +91,5 @@ $labels['saving'] = 'שמירה...';
 $labels['saved'] = 'נשמר';
 $labels['close'] = 'סגור';
 $labels['save'] = 'שמור';
-$labels['bundled'] = 'מארז';
+$labels['bundled'] = 'מגיע עם Roundcube';
 ?>

@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = '편집기가 준비되지 않았습니다';
 $labels['save'] = '저장';
 $labels['saved'] = '저장됨';
 $labels['saving'] = '저장 ...';
+$labels['bundled'] = '라운드큐브와 번들 제공';
 ?>

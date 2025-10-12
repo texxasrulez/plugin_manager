@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Urednik ni pripravljen';
 $labels['save'] = 'Shrani';
 $labels['saved'] = 'Shranjeno';
 $labels['saving'] = 'Varčevanje...';
+$labels['bundled'] = 'V paketu z Roundcube';
 ?>

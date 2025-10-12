@@ -91,5 +91,5 @@ $labels['editor_not_ready'] = 'Editor ei ole valmis';
 $labels['save'] = 'Tallenna';
 $labels['saved'] = 'Tallennettu';
 $labels['saving'] = 'Säästö ...';
-$labels['bundled'] = 'Niputettu';
+$labels['bundled'] = 'Mukana Roundcube';
 ?>

@@ -91,5 +91,5 @@ $labels['editor_not_ready'] = 'Editor není připraven';
 $labels['save'] = 'Uložit';
 $labels['saved'] = 'Uloženo';
 $labels['saving'] = 'Úspora ...';
-$labels['bundled'] = 'Svazek';
+$labels['bundled'] = 'V balíčku s Roundcube';
 ?>

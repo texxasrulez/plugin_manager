@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Szerkesztő nem kész';
 $labels['save'] = 'Mentés';
 $labels['saved'] = 'Megmentett';
 $labels['saving'] = 'Megtakarítás ...';
+$labels['bundled'] = 'Roundcube csomagban';
 ?>

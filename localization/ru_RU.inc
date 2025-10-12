@@ -91,4 +91,5 @@ $labels['saving'] = 'Сохранение ... ';
 $labels['saved'] = 'Сохранено';
 $labels['close'] = 'Закрывать';
 $labels['save'] = 'Сохранять';
+$labels['bundled'] = 'В комплекте с Roundcube';
 ?>

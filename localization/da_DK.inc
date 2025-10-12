@@ -91,5 +91,5 @@ $labels['editor_not_ready'] = 'Redaktør ikke klar';
 $labels['save'] = 'Gemme';
 $labels['saved'] = 'Gemt';
 $labels['saving'] = 'Sparer ...';
-$labels['bundled'] = 'Samlet';
+$labels['bundled'] = 'Leveres sammen med Roundcube';
 ?>

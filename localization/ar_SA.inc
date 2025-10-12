@@ -91,5 +91,5 @@ $labels['saving'] = 'توفير ...';
 $labels['saved'] = 'تم الحفظ';
 $labels['close'] = 'إغلاق';
 $labels['save'] = 'الحفظ';
-$labels['bundled'] = 'مجمعة';
+$labels['bundled'] = 'مجمعة مع راوند كيوب';
 ?>

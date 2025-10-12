@@ -91,4 +91,5 @@ $labels['saving'] = '保存 ... ';
 $labels['saved'] = '已保存';
 $labels['close'] = '关闭';
 $labels['save'] = '节省';
+$labels['bundled'] = '与 Roundcube 捆绑';
 ?>

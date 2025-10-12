@@ -90,5 +90,5 @@ $labels['version_remote'] = 'Viimane versioon';
 $labels['via'] = 'kaudu';
 $labels['websites'] = 'Veebilehed';
 $labels['zip_no_avail'] = 'ZipArchive laiendus ei ole saadaval';
-$labels['bundled'] = 'Komplekteeritud';
+$labels['bundled'] = 'Komplektis Roundcube\'iga';
 ?>

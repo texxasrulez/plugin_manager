@@ -91,5 +91,5 @@ $labels['saving'] = 'Ahorrar ...';
 $labels['saved'] = 'Guardado';
 $labels['close'] = 'Cerrar';
 $labels['save'] = 'Guardar';
-$labels['bundled'] = 'Paquete';
+$labels['bundled'] = 'Combinado con Roundcube';
 ?>

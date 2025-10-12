@@ -389,9 +389,23 @@ class plugin_manager extends rcube_plugin
                 $st_html = '<strong class="pm-ok">' . $st_html . '&nbsp;&nbsp;&#10003;</strong>';
             }
 
-            if (!empty($r['reason']) || !empty($r['via'])) {
-                $st_html .= ' <span class="hint">(' . rcube::Q(trim(($r['reason'] ? $r['reason'] : '') . (empty($r['via']) ? '' : (($r['reason'] ? ', ' : '') . ( $this->gettext('via') ?: 'via' ) . ' ' . $r['via'])))) . ')</span>';
-            }
+			$reason = isset($r['reason']) ? (string)$r['reason'] : '';
+			$via    = isset($r['via']) ? (string)$r['via'] : '';
+
+			$reason_lc  = strtolower($reason);
+			$bundled_lc = strtolower($this->gettext('bundled'));
+
+			// hide redundant "(bundled)" next to "Bundled"
+			$show_reason = ($reason !== '') && ($reason_lc !== 'bundled') && ($reason_lc !== $bundled_lc);
+
+			if ($show_reason || $via !== '') {
+				$hint = ($show_reason ? $reason : '');
+				if ($via !== '') {
+					$hint .= ($hint !== '' ? ', ' : '');
+					$hint .= ( $this->gettext('via') ?: 'via' ) . ' ' . $via;
+				}
+				$st_html .= ' <span class="hint">(' . rcube::Q($hint) . ')</span>';
+			}
 
             $links_html = array();
             if (!empty($r['links']['packagist'])) {
@@ -584,7 +598,7 @@ class plugin_manager extends rcube_plugin
             }
         }
         // Overlay with sources.map.php if present
-try {
+	try {
     $base = null;
     if (!empty($meta['mainfile'])) {
         $dir = dirname($meta['mainfile']);
@@ -622,10 +636,10 @@ try {
             }
         }
     }
-} catch (\Throwable $e) {
-    // do not break discovery if map overlay fails
-}
-return $out;
+	} catch (\Throwable $e) {
+		// do not break discovery if map overlay fails
+	}
+	return $out;
     }
 
     private function latest_version_cached($sources, $force=false)

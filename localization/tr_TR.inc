@@ -91,4 +91,5 @@ $labels['editor_not_ready'] = 'Editör hazır değil';
 $labels['save'] = 'Kaydet';
 $labels['saved'] = 'Kurtarıldı';
 $labels['saving'] = 'Tasarruf ...';
+$labels['bundled'] = 'Roundcube ile birlikte';
 ?>

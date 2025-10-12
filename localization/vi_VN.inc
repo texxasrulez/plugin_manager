@@ -91,4 +91,5 @@ $labels['saving'] = 'Đang lưu ... ';
 $labels['saved'] = 'Đã lưu';
 $labels['close'] = 'Đóng';
 $labels['save'] = 'Cứu';
+$labels['bundled'] = 'Đi kèm với Roundcube';
 ?>
