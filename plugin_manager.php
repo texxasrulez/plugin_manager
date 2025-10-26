@@ -346,7 +346,7 @@ class plugin_manager extends rcube_plugin
              . '<th class="pm-sort" data-type="bool" style="text-align:left;">' . rcube::Q($this->gettext('enabled')) . ' / ' . rcube::Q($this->gettext('disabled')) .'</th>'
              . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('version_local')) . '</th>'
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('version_remote')) . '</th>'
-             . '<th class="pm-sort" data-type="semver" style="text-align:left;">' . rcube::Q($this->gettext('status')) . '</th>'
+             . '<th class="pm-sort" data-type="status" style="text-align:left;">' . rcube::Q($this->gettext('status')) . '</th>'
              . '<th class="pm-sort" data-type="text" style="text-align:left;">' . rcube::Q($this->gettext('websites')) . '</th>'
              . '</tr></thead><tbody>';
 
@@ -355,6 +355,13 @@ class plugin_manager extends rcube_plugin
             $st       = (string)$r['status'];
             $st_raw   = strtolower($st);
             $st_html  = rcube::Q($st);
+            $st_map = array(
+                strtolower($this->gettext('update_available')) => 0,
+                strtolower($this->gettext('up_to_date'))      => 1,
+                strtolower($this->gettext('bundled'))         => 2,
+                strtolower($this->gettext('unknown'))         => 3,
+            );
+            $st_sort = isset($st_map[$st_raw]) ? $st_map[$st_raw] : 9;
             $plugins_root = dirname(__DIR__);
             if (!$plugins_root) { $plugins_root = realpath(INSTALL_PATH . 'plugins'); }
             if (!$plugins_root) { $plugins_root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
@@ -439,13 +446,15 @@ class plugin_manager extends rcube_plugin
                 . '<td data-sort="' . $en_sort . '" style="text-align:left;">' . $en_html . '</td>'
                 . '<td style="text-align:left;">' . rcube::Q($r['local']) . '</td>'
                 . '<td style="text-align:left;">' . rcube::Q($r['remote']) . '</td>'
-                . '<td style="text-align:left;">' . $st_html . '</td>'
+                . '<td data-sort="' . rcube::Q($st_sort) . '" style="text-align:left;">' . $st_html . '</td>'
                 . '<td style="text-align:left;">' . implode(' &middot; ', $links_html) . '</td>'
                 . '</tr>';
         }
 
         $h[] = '</tbody></table>';
         $h[] = '</div>'; // .pm-scroll
+        $h[] = '<script>(function(){var t=document.getElementById("pm-table");if(!t)return;function v(s){if(!s)return[];s=(s+"").trim().replace(/^v/i,"");var m=s.match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);if(!m)return[0,0,0];return[parseInt(m[1]||0,10),parseInt(m[2]||0,10),parseInt(m[3]||0,10)];}function key(td,type){var raw=td.getAttribute("data-sort");if(raw==null)raw=td.textContent||td.innerText||"";raw=(raw+"").trim();if(type==="number"||type==="bool"){var n=parseFloat(raw);if(isNaN(n))n=0;return n;}if(type==="semver"){return v(raw);}if(type==="status"){var l=raw.toLowerCase().replace(/\s+/g,"_");if(/^\d+$/.test(raw))return parseInt(raw,10);var map={"update_available":0,"up_to_date":1,"bundled":2,"unknown":3};return map.hasOwnProperty(l)?map[l]:9;}return raw.toLowerCase();}function cmp(a,b){if(Array.isArray(a)&&Array.isArray(b)){for(var i=0;i<Math.max(a.length,b.length);i++){var av=a[i]||0,bv=b[i]||0;if(av<bv)return-1;if(av>bv)return 1;}return 0;}if(a<b)return-1;if(a>b)return 1;return 0;}function clear(th){var ths=th.parentNode.querySelectorAll("th.pm-sort");for(var i=0;i<ths.length;i++){ths[i].classList.remove("pm-sorted-asc");ths[i].classList.remove("pm-sorted-desc");}}function sortBy(th){var idx=Array.prototype.indexOf.call(th.parentNode.children,th);var type=th.getAttribute("data-type")||"text";var tbody=t.querySelector("tbody");if(!tbody)return;var rows=Array.prototype.slice.call(tbody.querySelectorAll("tr"));var asc=!th.classList.contains("pm-sorted-asc");rows.sort(function(r1,r2){var c1=r1.children[idx],c2=r2.children[idx];var k1=key(c1,type),k2=key(c2,type);return asc?cmp(k1,k2):cmp(k2,k1);});var frag=document.createDocumentFragment();rows.forEach(function(r){frag.appendChild(r);});tbody.appendChild(frag);clear(th);th.classList.add(asc?"pm-sorted-asc":"pm-sorted-desc");}var hs=t.querySelectorAll("th.pm-sort");for(var i=0;i<hs.length;i++){(function(th){th.addEventListener("click",function(){sortBy(th);});})(hs[i]);}})();</script>';
+
 
         // Busy text + basic handlers
         $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");window.location.href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1";});}})();</script>';
