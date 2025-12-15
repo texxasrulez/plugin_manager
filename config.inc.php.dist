@@ -22,7 +22,7 @@ $config['pm_sources_map'] = [
 ];
 
 // Optional: GitHub token to raise API rate limits for remote checks
-$config['pm_github_token'] = '';              // e.g. 'ghp_xxxxx...'
+$config['pm_github_token'] = 'github_pat_YOUR_TOKEN_HERE'; // e.g. 'ghp_xxxxx...'
 
 // Hide backup folders in UI and actions
 $config['pm_hide_bak'] = true;
@@ -33,26 +33,26 @@ $config['pm_update_admins'] = [1];            // only these Roundcube user IDs s
 
 // ===== UI niceties =====
 $config['pm_column_widths'] = [
-  'select' => '3%',
-  'plugin'  => '20%',
-  'directory' => '15%',
-  'enable_disable' => '10%',
-  'latest' => '10%',
-  'local'  => '12%',
-  'status' => '15%',
-  'website' => '15%',
+  'select' 			=> '3%',
+  'plugin'  		=> '20%',
+  'directory' 		=> '15%',
+  'enable_disable' 	=> '10%',
+  'latest' 			=> '8%',
+  'local'  			=> '8%',
+  'status' 			=> '18%',
+  'website' 		=> '18%',
 ];
 
 // ===== Backups & retention =====
 $config['pm_backups'] = true;                 // create .bak-YYYYmmdd-HHMMSS before updating
 $config['pm_auto_rollback'] = true;           // auto-restore last backup if update throws
 $config['pm_keep_backups'] = 3;               // keep newest N backups per plugin (set <1 for unlimited)
-$config['pm_backups_max_age_days'] = 90;      // also delete backups older than N days (0 disables)
+$config['pm_backups_max_age_days'] = 30;      // also delete backups older than N days (0 disables)
 
 // ===== Email alerts (lazy cron) =====
 $config['pm_notify_enabled'] = true;
-$config['pm_notify_recipients'] = ['email@domain.net'];
-$config['pm_notify_from'] = 'email@domain.net';
+$config['pm_notify_recipients'] = ['user@domain.com'];
+$config['pm_notify_from'] = 'user@domain.com';
 $config['pm_notify_interval_hours'] = 3;
 
 // ===== Policies: pins & ignore (scoped) =====
@@ -100,6 +100,7 @@ $config['pm_hidden_plugins'] = array(
     'attachment_reminder',
     'autologon',
     'autologout',
+    'caldav_calendar',
     'database_attachments',
     'debug_logger',
     'emoticons',
@@ -111,17 +112,22 @@ $config['pm_hidden_plugins'] = array(
     'http_authentication',
     'identicon',
     'identity_select',
+    'identity_switch',
+    'info_portal',
     'jqueryui',
     'krb_authentication',
+    'libcalendaring',
+    'libkolab',
     'managesieve',
     'markasjunk',
     'newmail_notifier',
     'new_user_dialog',
     'new_user_identity',
     'password',
-    'plugin_manager',
+//    'plugin_manager',
     'reconnect',
     'redundant_attachments',
+    'roundrive',
     'show_additional_headers',
     'squirrelmail_usercopy',
     'subscriptions_option',

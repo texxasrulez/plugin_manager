@@ -345,13 +345,19 @@ class plugin_manager extends rcube_plugin
             }
         }
         $rc_download_url = rcube::Q($rc_info['download']);
+        $show_download = true;
+        if ($rc_info['remote'] && $rc_info['local'] && $this->compare_versions($rc_info['local'], $rc_info['remote']) >= 0) {
+            $show_download = false;
+        }
+        $download_html = $show_download
+            ? ' &middot; <a class="pm-rc-download" target="_blank" rel="noreferrer" href="' . $rc_download_url . '">' . rcube::Q($this->gettext('dnload_update') ?: 'Download Roundcube') . '</a>'
+            : '';
         $h[] = '<div class="pm-rcinfo" style="float:right;text-align:right;">'
             . '<span class="pm-rc-label">Roundcube: <strong>' . $rc_local_text . '</strong></span>'
             . ' &middot; '
             . '<span class="pm-rc-remote">' . ($rc_info['remote'] ? rcube::Q($this->gettext('version_remote')) . ': ' . $rc_remote_text : rcube::Q($this->gettext('remote_disabled'))) . '</span>'
             . ($rc_status ? ' &middot; ' . $rc_status : '')
-            . ' &middot; '
-            . '<a class="pm-rc-download" target="_blank" rel="noreferrer" href="' . $rc_download_url . '">' . rcube::Q($this->gettext('dnload_update') ?: 'Download Roundcube') . '</a>'
+            . $download_html
             . '</div>';
         $h[] = '<a class="button pm-reload" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager')) . '">' . rcube::Q($this->gettext('reload_page')) . '</a> ';
         $h[] = '<a class="button pm-diagnostics" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1,'_token'=>$token)) . '">' . rcube::Q($this->gettext('diagnostics')) . '</a> ';
@@ -1039,6 +1045,9 @@ class plugin_manager extends rcube_plugin
 
         $meta    = $this->read_plugin_meta($plugdir);
         $sources = $this->build_sources($meta);
+        if (!empty($sources['bundled'])) {
+            throw new Exception('Updates for bundled Roundcube plugins are disabled. Update Roundcube itself to receive new versions.');
+        }
         $channel = strtolower((string)$this->config->get('pm_update_channel', 'release'));
 
         $zipurl = null; $j = null; $owner = null; $repo = null;
@@ -1375,6 +1384,7 @@ class plugin_manager extends rcube_plugin
             'backup_dir' => 'backup dir',
             'pinned' => 'pinned',
             'ignored_bulk' => 'ignored by policy',
+            'bundled' => 'bundled plugin',
             'no_sources' => 'no sources',
             'no_remote_version' => 'no remote version',
             'up_to_date' => 'up to date',
@@ -1534,6 +1544,10 @@ class plugin_manager extends rcube_plugin
             }
             $meta = $this->read_plugin_meta($dir);
             $sources = $this->build_sources($meta);
+            if (!empty($sources['bundled'])) {
+                $result['skipped'][] = array('dir'=>$base,'reason'=>'bundled');
+                continue;
+            }
             if (empty($sources['composer_name']) && empty($sources['github'])) {
                 $result['skipped'][] = array('dir'=>$base,'reason'=>'no_sources');
                 continue;
