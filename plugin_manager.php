@@ -65,9 +65,6 @@ class plugin_manager extends rcube_plugin
     {
         $this->rc = rcube::get_instance();
         $this->pm_data_init();
-        if (method_exists($this, 'pm_write_central_versions')) {
-            $this->pm_write_central_versions();
-        }
 
         if (isset($_GET['_pm_versions'])) {
             header('Content-Type: application/json; charset=UTF-8');
@@ -76,6 +73,9 @@ class plugin_manager extends rcube_plugin
         }
 
         $this->pm_load_config();
+        if ($this->cfg_true('pm_write_central_on_init', true) && method_exists($this, 'pm_write_central_versions')) {
+            $this->pm_write_central_versions();
+        }
 
         if ($this->rc && $this->rc->output) {
             if (!isset($this->rc->output->env['pm_ace_base'])) {
@@ -132,10 +132,14 @@ class plugin_manager extends rcube_plugin
         $flag = $this->data_dir . DIRECTORY_SEPARATOR . 'remote.off';
         $req_remote = rcube_utils::get_input_value('_pm_remote', rcube_utils::INPUT_GPC);
         if ($req_remote !== null && $req_remote !== '') {
-            if ((string)$req_remote === '0' || $req_remote === 0) {
-                @file_put_contents($flag, '1');
+            if (!$this->is_update_admin() || !$this->request_token_valid()) {
+                $this->flash_add($this->gettext('not_authorized'), 'error');
             } else {
-                if (file_exists($flag)) { @unlink($flag); }
+                if ((string)$req_remote === '0' || $req_remote === 0) {
+                    @file_put_contents($flag, '1');
+                } else {
+                    if (file_exists($flag)) { @unlink($flag); }
+                }
             }
         }
         if (file_exists($flag)) {
@@ -186,6 +190,11 @@ class plugin_manager extends rcube_plugin
             $pm_dry = rcube_utils::get_input_value('_pm_dry', rcube_utils::INPUT_GPC) ? true : false;
             $this->log_debug('bulk_handler', array('where'=>'action_list', 'pm_all'=>$pm_all, 'pm_dry'=>$pm_dry));
             if ($pm_all) {
+                if (!$this->request_token_valid()) {
+                    $this->flash_add($this->gettext('not_authorized'), 'error');
+                    $this->rc->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
+                    return;
+                }
                 $res = $this->update_all_outdated($pm_dry);
                 $summary = $pm_dry
                     ? sprintf(rcube::Q($this->gettext('testing_complete')) . ': %d would update, %d would fail, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']))
@@ -209,20 +218,25 @@ class plugin_manager extends rcube_plugin
         $this->flash_flush();
         $this->log_debug('render_page start');
 
+        $token = (string)$this->rc->get_request_token();
         $pm_refresh = rcube_utils::get_input_value('_pm_refresh', rcube_utils::INPUT_GPC);
         if ($pm_refresh) {
-            if (!empty($this->cache_file) && file_exists($this->cache_file)) {
-                @unlink($this->cache_file);
-            }
-            $plugins_for_refresh = $this->discover_plugins();
-            foreach ($plugins_for_refresh as $pfr) {
-                $meta_fr    = $this->read_plugin_meta($pfr['dir']);
-                $sources_fr = $this->build_sources($meta_fr);
-                if (!empty($sources_fr['composer_name']) || !empty($sources_fr['github'])) {
-                    $this->latest_version_cached($sources_fr, true);
+            if (!$this->is_update_admin() || !$this->request_token_valid()) {
+                $this->flash_add($this->gettext('not_authorized'), 'error');
+            } else {
+                if (!empty($this->cache_file) && file_exists($this->cache_file)) {
+                    @unlink($this->cache_file);
                 }
+                $plugins_for_refresh = $this->discover_plugins();
+                foreach ($plugins_for_refresh as $pfr) {
+                    $meta_fr    = $this->read_plugin_meta($pfr['dir']);
+                    $sources_fr = $this->build_sources($meta_fr);
+                    if (!empty($sources_fr['composer_name']) || !empty($sources_fr['github'])) {
+                        $this->latest_version_cached($sources_fr, true);
+                    }
+                }
+                $this->last_ts = time();
             }
-            $this->last_ts = time();
         }
 
         $this->include_stylesheet($this->local_skin_path() . '/plugin_manager.css');
@@ -318,18 +332,39 @@ class plugin_manager extends rcube_plugin
 
         // top controls
         $h[] = '<div style="margin:8px 0;">';
+        $rc_info = $this->roundcube_version_info();
+        $rc_local_text = rcube::Q($rc_info['local'] ?: $this->gettext('unknown'));
+        $rc_remote_text = $rc_info['remote'] ? rcube::Q($rc_info['remote']) : ($this->remote_checks ? rcube::Q($this->gettext('unknown')) : rcube::Q($this->gettext('remote_disabled')));
+        $rc_status = '';
+        if ($rc_info['remote']) {
+            $cmp_rc = $this->compare_versions($rc_info['local'], $rc_info['remote']);
+            if ($cmp_rc < 0) {
+                $rc_status = '<span class="pm-update">' . rcube::Q($this->gettext('update_available')) . '</span>';
+            } else {
+                $rc_status = '<span class="pm-ok">' . rcube::Q($this->gettext('up_to_date')) . '</span>';
+            }
+        }
+        $rc_download_url = rcube::Q($rc_info['download']);
+        $h[] = '<div class="pm-rcinfo" style="float:right;text-align:right;">'
+            . '<span class="pm-rc-label">Roundcube: <strong>' . $rc_local_text . '</strong></span>'
+            . ' &middot; '
+            . '<span class="pm-rc-remote">' . ($rc_info['remote'] ? rcube::Q($this->gettext('version_remote')) . ': ' . $rc_remote_text : rcube::Q($this->gettext('remote_disabled'))) . '</span>'
+            . ($rc_status ? ' &middot; ' . $rc_status : '')
+            . ' &middot; '
+            . '<a class="pm-rc-download" target="_blank" rel="noreferrer" href="' . $rc_download_url . '">' . rcube::Q($this->gettext('dnload_update') ?: 'Download Roundcube') . '</a>'
+            . '</div>';
         $h[] = '<a class="button pm-reload" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager')) . '">' . rcube::Q($this->gettext('reload_page')) . '</a> ';
-        $h[] = '<a class="button pm-diagnostics" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1)) . '">' . rcube::Q($this->gettext('diagnostics')) . '</a> ';
+        $h[] = '<a class="button pm-diagnostics" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_diag'=>1,'_token'=>$token)) . '">' . rcube::Q($this->gettext('diagnostics')) . '</a> ';
         $toggle_label = $this->remote_checks ? $this->gettext('disable_remote') : $this->gettext('enable_remote');
-        $h[] = '<a class="button pm-toggle-remote" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>($this->remote_checks?0:1))) . '">' . rcube::Q($toggle_label) . '</a>';
-        $h[] = ' <a class="button pm-refresh" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1)) . '">' . rcube::Q($this->gettext('refresh_versions')) . '</a>';
+        $h[] = '<a class="button pm-toggle-remote" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_remote'=>($this->remote_checks?0:1),'_token'=>$token)) . '">' . rcube::Q($toggle_label) . '</a>';
+        $h[] = ' <a class="button pm-refresh" href="' . $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager','_pm_refresh'=>1,'_token'=>$token)) . '">' . rcube::Q($this->gettext('refresh_versions')) . '</a>';
         $h[] = '&nbsp;&nbsp;<span class="pm-lastupdate" style="margin:6px 0 4px 0;">' . rcube::Q($this->gettext('last_checked')) . ':&nbsp;' . ( $this->last_ts ? '<span class="pm-checked">' . rcube::Q($this->pm_time_ago($this->last_ts)) . '</span>' : '<span class="pm-checked">'. rcube::Q($this->gettext('never')) .'</span>' ) . '</span>';
         $h[] = '</div>';
 
         // bulk toolbar
         if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
             $h[] = '<div class="pm-bulkbar" style="margin:10px 0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
-            $h[] = '<button class="button pm-update-selected" type="button">' . rcube::Q($this->gettext('update_selected') ?: 'Update Selected') . '</button>';
+            $h[] = '<button class="button pm-update-selected" data-token="' . rcube::Q($token) . '" type="button">' . rcube::Q($this->gettext('update_selected') ?: 'Update Selected') . '</button>';
             $h[] = '<label><input type="checkbox" class="pm-only-outdated" /> ' . rcube::Q($this->gettext('only_outdated') ?: 'Only outdated') . '</label>';
             $h[] = '<label><input type="checkbox" class="pm-only-enabled" /> ' . rcube::Q($this->gettext('only_enabled') ?: 'Only enabled') . '</label>';
             $h[] = '<label><input type="checkbox" class="pm-only-errors" /> ' . rcube::Q($this->gettext('only_errors') ?: 'Only errors') . '</label>';
@@ -362,23 +397,21 @@ class plugin_manager extends rcube_plugin
                 strtolower($this->gettext('unknown'))         => 3,
             );
             $st_sort = isset($st_map[$st_raw]) ? $st_map[$st_raw] : 9;
-            $plugins_root = dirname(__DIR__);
-            if (!$plugins_root) { $plugins_root = realpath(INSTALL_PATH . 'plugins'); }
-            if (!$plugins_root) { $plugins_root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
+            $plugins_root = $this->plugins_root_dir();
             if ($plugins_root) {
                 $plugdir = $plugins_root . DIRECTORY_SEPARATOR . $dir_name;
                 $baks = (array)glob($plugdir . '.bak-*', GLOB_NOSORT);
                 if (!empty($baks)) {
                     usort($baks, function($a,$b){ return filemtime($b) <=> filemtime($a); });
                     $latest_bak = basename($baks[0]);
-                    $restore_url = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager.restore','_pm'=>$dir_name,'_bak'=>$latest_bak));
+                    $restore_url = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager.restore','_pm'=>$dir_name,'_bak'=>$latest_bak,'_token'=>$token));
                     $st_html .= ' <a class="pm-restore-link" href="' . rcube::Q($restore_url) . '">[' . rcube::Q($this->gettext('restore')) . ']</a>';
                 }
             }
 
             if ($st === $this->gettext('update_available') || strpos($st_raw, 'update') !== false) {
                 if ($this->is_update_admin()) {
-                    $u    = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager.update','_pm'=>$dir_name));
+                    $u    = $this->rc->url(array('_task'=>'settings','_action'=>'plugin.plugin_manager.update','_pm'=>$dir_name,'_token'=>$token));
                     $st_html .= ' <a class="pm-update-link" href="' . rcube::Q($u) . '" data-busy="Updating ...">[' . rcube::Q($this->gettext('update')) . ']</a>';
                 }
                 if (!empty($r['policy']['pinned'])) {
@@ -457,7 +490,7 @@ class plugin_manager extends rcube_plugin
 
 
         // Busy text + basic handlers
-        $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");window.location.href="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1";});}})();</script>';
+        $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");var token=this.getAttribute("data-token")||"";var url="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1";if(token){url+="&_token="+encodeURIComponent(token);}window.location.href=url;});}})();</script>';
 
         // Column sorting
         $h[] = '<script>(function(){var table=document.getElementById("pm-table");if(!table)return;var thead=table.tHead,tbody=table.tBodies[0];if(!thead||!tbody)return;function txt(el){return(el&&(el.textContent||el.innerText)||"").trim();}function parseSemver(v){v=(v||"").trim();if(!v||v==="—")return{k:[-1]};var vl=v.toLowerCase();if(vl==="unknown"||vl==="unk"||vl==="?")return{k:[-1]};v=v.replace(/^v/i,"");var parts=v.split(/[^0-9a-zA-Z]+/).filter(Boolean);var out=[];for(var i=0;i<parts.length;i++){var p=parts[i];if(/^\d+$/.test(p))out.push(parseInt(p,10));else out.push(-0.5);}return{k:out,raw:v};}function cmpCells(aCell,bCell,type){if(type==="bool"){var av=parseInt(aCell.getAttribute("data-sort")||"0",10);var bv=parseInt(bCell.getAttribute("data-sort")||"0",10);return av-bv;}if(type==="semver"){var sa=parseSemver(txt(aCell)).k,sb=parseSemver(txt(bCell)).k;var n=Math.max(sa.length,sb.length);for(var i=0;i<n;i++){var ai=(i<sa.length)?sa[i]:0,bi=(i<sb.length)?sb[i]:0;if(ai!==bi)return ai-bi;}return 0;}var a=txt(aCell).toLowerCase(),b=txt(bCell).toLowerCase();if(a===b)return 0;return a>b?1:-1;}var headers=thead.rows[0].cells;var state={col:null,dir:"asc"};function clearIndicators(){for(var i=0;i<headers.length;i++){headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");headers[i].removeAttribute("aria-sort");}}function sortBy(colIndex,type,dir){var rows=Array.prototype.slice.call(tbody.rows);rows.sort(function(r1,r2){var c1=r1.cells[colIndex]||document.createElement("td");var c2=r2.cells[colIndex]||document.createElement("td");var c=cmpCells(c1,c2,type);return dir==="asc"?c:-c;});var frag=document.createDocumentFragment();rows.forEach(function(r){frag.appendChild(r);});tbody.appendChild(frag);clearIndicators();var th=headers[colIndex];th.classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");th.setAttribute("aria-sort",dir==="asc"?"ascending":"descending");}for(let i=0;i<headers.length;i++){let th=headers[i];if(!th.classList.contains("pm-sort"))continue;th.addEventListener("click",function(){var type=th.getAttribute("data-type")||"text";if(state.col===i){state.dir=(state.dir==="asc"?"desc":"asc");}else{state.col=i;state.dir="asc";}sortBy(i,type,state.dir);});}})();</script>';
@@ -475,6 +508,62 @@ class plugin_manager extends rcube_plugin
         return $html;
     }
 
+    private function roundcube_version_info()
+    {
+        $local = null;
+        if (defined('RCMAIL_VERSION')) {
+            $local = RCMAIL_VERSION;
+        } elseif (defined('RCUBE_VERSION')) {
+            $local = RCUBE_VERSION;
+        }
+        if (!$local && $this->rc && $this->rc->config) {
+            foreach (array('release', 'release_version', 'version', 'product_version') as $key) {
+                $val = $this->rc->config->get($key);
+                if ($val) {
+                    $local = $val;
+                    break;
+                }
+            }
+        }
+
+        $channel = 'stable';
+        if ($this->config) {
+            $cfg_channel = strtolower((string)$this->config->get('pm_roundcube_release_channel', 'stable'));
+            if (in_array($cfg_channel, array('stable','rc'), true)) {
+                $channel = $cfg_channel;
+            }
+        }
+        $allow_prerelease = ($channel === 'rc');
+
+        $download = 'https://roundcube.net/download/';
+        if ($this->config) {
+            $cfg = (string)$this->config->get('pm_roundcube_download_url', '');
+            if ($cfg !== '') {
+                $download = $cfg;
+            }
+        }
+
+        $remote = null;
+        if ($this->remote_checks) {
+            $sources = array(
+                'composer_name' => 'roundcube/roundcubemail',
+                'github' => 'https://github.com/roundcube/roundcubemail',
+                'allow_prerelease' => $allow_prerelease,
+            );
+            $remote = $this->latest_version_cached($sources);
+        }
+
+        if ($remote && strpos($download, '{version}') !== false) {
+            $download = str_replace('{version}', rawurlencode($remote), $download);
+        }
+
+        return array(
+            'local' => $local,
+            'remote' => $remote,
+            'download' => $download,
+        );
+    }
+
     private function enabled_plugins()
     {
         $list = $this->config->get('plugins', array());
@@ -486,17 +575,29 @@ class plugin_manager extends rcube_plugin
 
     private function plugins_root_dir()
     {
+        $candidates = array();
         if (!empty($this->plugin_root) && is_dir($this->plugin_root)) {
-            return realpath($this->plugin_root);
+            $candidates[] = $this->plugin_root;
         }
-        $here = dirname(__FILE__);
-        $plugins = dirname($here);
-        return realpath($plugins);
+        $candidates[] = dirname(__DIR__);
+        if (defined('INSTALL_PATH')) {
+            $candidates[] = rtrim(INSTALL_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'plugins';
+        }
+        if (defined('RCUBE_INSTALL_PATH')) {
+            $candidates[] = rtrim(RCUBE_INSTALL_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'plugins';
+        }
+        foreach ($candidates as $cand) {
+            if ($cand && is_dir($cand)) {
+                $real = realpath($cand);
+                if ($real) return $real;
+            }
+        }
+        return null;
     }
 
     private function discover_plugins()
     {
-        $root = dirname(__DIR__);
+        $root = $this->plugins_root_dir();
         $this->log_debug('discover_plugins root', array('root' => $root));
         $out = array();
         if (!$root) return $out;
@@ -701,6 +802,7 @@ class plugin_manager extends rcube_plugin
     private function latest_version_online($sources)
     {
         $result = array('ver'=>null,'via'=>'','reason'=>'');
+        $allow_prerelease = !isset($sources['allow_prerelease']) || (bool)$sources['allow_prerelease'];
 
         if (!empty($sources['composer_name'])) {
             $name = $sources['composer_name'];
@@ -709,15 +811,21 @@ class plugin_manager extends rcube_plugin
             if ($st === 200 && $resp && ($data = json_decode($resp, true)) && !empty($data['packages'][$name])) {
                 $versions = $data['packages'][$name];
                 $best = null;
+                $filtered = false;
                 foreach ($versions as $v) {
                     $ver = isset($v['version']) ? $v['version'] : null;
                     if (!$ver) continue;
                     if (preg_match('/^dev-|dev$/i', $ver)) continue;
+                    if (!$allow_prerelease && $this->is_prerelease_version($ver)) {
+                        $filtered = true;
+                        continue;
+                    }
                     if ($best === null || version_compare(ltrim($best,'v'), ltrim($ver,'v')) < 0) {
                         $best = $ver;
                     }
                 }
                 if ($best) { $result['ver']=$best; $result['via']='packagist'; return $result; }
+                if ($filtered) { $result['reason'] = 'prerelease_filtered'; }
             }
         }
 
@@ -730,9 +838,14 @@ class plugin_manager extends rcube_plugin
                 $api = 'https://api.github.com/repos/' . $repo . '/releases/latest';
                 $st=0;$er=null; $resp = $this->http_get2($api, $hdrs, $st, $er);
                 if ($st === 200 && $resp && ($data = json_decode($resp, true)) && !empty($data['tag_name'])) {
-                    $result['ver'] = ltrim((string)$data['tag_name'], 'v');
-                    $result['via'] = 'github-release';
-                    return $result;
+                    $tag = (string)$data['tag_name'];
+                    $is_pre = (!empty($data['prerelease']) || $this->is_prerelease_version($tag));
+                    if ($allow_prerelease || !$is_pre) {
+                        $result['ver'] = ltrim($tag, 'v');
+                        $result['via'] = 'github-release';
+                        return $result;
+                    }
+                    $result['reason'] = 'prerelease_filtered';
                 }
                 $api2 = 'https://api.github.com/repos/' . $repo . '/tags';
                 $st2=0;$er2=null; $resp2 = $this->http_get2($api2, $hdrs, $st2, $er2);
@@ -741,6 +854,7 @@ class plugin_manager extends rcube_plugin
                     foreach ($tags as $t) {
                         $tag = isset($t['name']) ? $t['name'] : '';
                         if (!$tag) continue;
+                        if (!$allow_prerelease && $this->is_prerelease_version($tag)) continue;
                         $tag = ltrim($tag, 'v');
                         if ($best === null || version_compare($best, $tag) < 0) { $best = $tag; }
                     }
@@ -758,6 +872,12 @@ class plugin_manager extends rcube_plugin
         $a = ltrim((string)$local, 'v');
         $b = ltrim((string)$remote, 'v');
         return version_compare($a, $b);
+    }
+
+    private function is_prerelease_version($version)
+    {
+        if ($version === null) return false;
+        return (bool)preg_match('/(?:alpha|beta|rc)/i', (string)$version);
     }
 
     private function http_get2($url, $headers = array(), &$status = null, &$err = null)
@@ -812,6 +932,11 @@ class plugin_manager extends rcube_plugin
             $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
             return;
         }
+        if (!$this->request_token_valid()) {
+            $rc->output->show_message('' . rcube::Q($this->gettext('not_authorized')) . '.', 'error');
+            $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
+            return;
+        }
         $plugin_dir = rcube_utils::get_input_value('_pm', rcube_utils::INPUT_GPC);
         $plugin_dir = preg_replace('~[^a-zA-Z0-9_\-]~', '', (string)$plugin_dir);
         if (!$plugin_dir) {
@@ -841,14 +966,17 @@ class plugin_manager extends rcube_plugin
             $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
             return;
         }
+        if (!$this->request_token_valid()) {
+            $rc->output->show_message('' . rcube::Q($this->gettext('not_authorized')) . '.', 'error');
+            $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
+            return;
+        }
         $dir_name = rcube_utils::get_input_value('_pm', rcube_utils::INPUT_GPC);
         $dir_name = preg_replace('~[^a-zA-Z0-9_\-]~', '', (string)$dir_name);
         $bak_name = rcube_utils::get_input_value('_bak', rcube_utils::INPUT_GPC);
         $bak_name = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$bak_name);
 
-        $plugins_root = dirname(__DIR__);
-        if (!$plugins_root) { $plugins_root = realpath(INSTALL_PATH . 'plugins'); }
-        if (!$plugins_root) { $plugins_root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
+        $plugins_root = $this->plugins_root_dir();
         if (!$plugins_root || !$dir_name) {
             $rc->output->show_message('' . rcube::Q($this->gettext('missing_parameter')) . '.', 'error');
             $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
@@ -895,9 +1023,7 @@ class plugin_manager extends rcube_plugin
 
     private function perform_update($dir_name)
     {
-        $root = dirname(__DIR__);
-        if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
-        if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
+        $root = $this->plugins_root_dir();
         if (!$root) { throw new Exception(rcube::Q($this->gettext('no_locate_dir'))); }
 
         $plugdir = $root . DIRECTORY_SEPARATOR . $dir_name;
@@ -1025,9 +1151,7 @@ class plugin_manager extends rcube_plugin
     {
         $keep = (int)$this->config->get('pm_keep_backups', 3);
         $max_age_days = (int)$this->config->get('pm_backups_max_age_days', 0);
-        $root = dirname(__DIR__);
-        if (!$root) { $root = realpath(INSTALL_PATH . 'plugins'); }
-        if (!$root) { $root = realpath(RCUBE_INSTALL_PATH . 'plugins'); }
+        $root = $this->plugins_root_dir();
         if (!$root) { return; }
 
         $plugdir = $root . DIRECTORY_SEPARATOR . $dir_name;
@@ -1111,8 +1235,8 @@ class plugin_manager extends rcube_plugin
     private function pm_data_init()
     {
         $this->home = dirname(__FILE__);
-        $this->plugin_root = realpath($this->home);
-        $this->data_dir = $this->plugin_root . DIRECTORY_SEPARATOR . 'data';
+        $plugin_dir = realpath($this->home) ?: $this->home;
+        $this->data_dir = $plugin_dir . DIRECTORY_SEPARATOR . 'data';
         if (!is_dir($this->data_dir)) @mkdir($this->data_dir, 0775, true);
         $this->central_version_file    = $this->data_dir . DIRECTORY_SEPARATOR . 'version.json';
         $this->installed_versions_file = $this->data_dir . DIRECTORY_SEPARATOR . 'installed_versions.json';
@@ -1148,7 +1272,11 @@ class plugin_manager extends rcube_plugin
     public function pm_write_central_versions()
     {
         $this->pm_data_init();
-        $plugins_root = dirname(__DIR__);
+        $plugins_root = $this->plugins_root_dir();
+        if (!$plugins_root) {
+            $this->log_debug('pm_write_central_versions: missing root');
+            return;
+        }
 
         $out = array(
             'generated_at' => gmdate('c'),
@@ -1227,6 +1355,20 @@ class plugin_manager extends rcube_plugin
         return in_array($uid, $admins, true);
     }
 
+    private function request_token_valid()
+    {
+        $token = rcube_utils::get_input_value('_token', rcube_utils::INPUT_GPC);
+        if (($token === null || $token === '') && !empty($_SERVER['HTTP_X_RCUBE_TOKEN'])) {
+            $token = (string)$_SERVER['HTTP_X_RCUBE_TOKEN'];
+        }
+        $token = (string)$token;
+        $expected = (string)$this->rc->get_request_token();
+        if ($token === '' || $expected === '') {
+            return false;
+        }
+        return hash_equals($expected, $token);
+    }
+
     private function format_skip_reasons($skipped, $limit = 12) {
         if (!$skipped) return '';
         $map = array(
@@ -1263,10 +1405,23 @@ class plugin_manager extends rcube_plugin
         $this->rc->output->reset();
         @header('Content-Type: application/json; charset=UTF-8');
 
+        if (!$this->is_update_admin()) {
+            echo json_encode(array('ok'=>false, 'error'=>'not_authorized'));
+            exit;
+        }
+        if (!$this->request_token_valid()) {
+            echo json_encode(array('ok'=>false, 'error'=>'invalid_token'));
+            exit;
+        }
+
         $plug = rcube_utils::get_input_value('_pm_plug', rcube_utils::INPUT_GPC);
         $plug = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$plug);
 
-        $root = dirname(__DIR__);
+        $root = $this->plugins_root_dir();
+        if (!$root) {
+            echo json_encode(array('ok'=>false, 'error'=>'plugdir_not_found'));
+            exit;
+        }
         $plugdir = ($plug !== '' && $root) ? ($root . DIRECTORY_SEPARATOR . $plug) : null;
         $cfg   = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php') : null;
         $cfgd  = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php.dist') : null;
@@ -1298,11 +1453,24 @@ class plugin_manager extends rcube_plugin
         $this->rc->output->reset();
         @header('Content-Type: application/json; charset=UTF-8');
 
+        if (!$this->is_update_admin()) {
+            echo json_encode(array('ok'=>false, 'error'=>'not_authorized'));
+            exit;
+        }
+        if (!$this->request_token_valid()) {
+            echo json_encode(array('ok'=>false, 'error'=>'invalid_token'));
+            exit;
+        }
+
         $plug = rcube_utils::get_input_value('_pm_plug', rcube_utils::INPUT_POST);
         $plug = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$plug);
         $content = rcube_utils::get_input_value('_pm_content', rcube_utils::INPUT_POST, true);
 
-        $root = dirname(__DIR__);
+        $root = $this->plugins_root_dir();
+        if (!$root) {
+            echo json_encode(array('ok'=>false, 'error'=>'plugdir_not_found'));
+            exit;
+        }
         $plugdir = ($plug !== '' && $root) ? ($root . DIRECTORY_SEPARATOR . $plug) : null;
 
         if ($plug === '' || $content === null) {

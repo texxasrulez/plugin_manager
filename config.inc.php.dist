@@ -4,6 +4,7 @@
 // ===== Core behavior =====
 $config['pm_debug'] = false;
 $config['pm_remote_checks'] = true;           // query GitHub for remote versions
+$config['pm_roundcube_release_channel'] = 'stable'; // 'stable' (final releases only) or 'rc' (include pre-releases)
 $config['pm_request_timeout'] = 7;            // HTTP timeout (seconds)
 $config['pm_cache_ttl'] = 43200;              // remote check cache TTL (seconds)
 $config['pm_plugin_root'] = null;             // override plugins root dir (null = auto)
