@@ -88,7 +88,7 @@ $config['pm_checksum_asset_regex'] = '/(sha256|checksums).*\.(txt|sha256)$/i';
 // NOTE: In this plugin package we ship only 'monokai' locally. Other themes will be loaded from CDN on demand.
 $config['pm_ace_theme']       = 'genesworld';     // 'auto' or explicit theme (e.g., 'monokai')
 $config['pm_ace_light_theme'] = 'github';  // used when pm_ace_theme = 'auto'
-$config['pm_ace_dark_theme']  = 'vibrant_ink';  // used when pm_ace_theme = 'auto'
+$config['pm_ace_dark_theme']  = 'genesworld';  // used when pm_ace_theme = 'auto'
 
 // ===== Hidden plugins (do not show in UI) =====
 // Names must match plugin directory names (case-insensitive).
