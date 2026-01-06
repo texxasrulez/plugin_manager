@@ -352,7 +352,7 @@ class plugin_manager extends rcube_plugin
         $download_html = $show_download
             ? ' &middot; <a class="pm-rc-download" target="_blank" rel="noreferrer" href="' . $rc_download_url . '">' . rcube::Q($this->gettext('dnload_update') ?: 'Download Roundcube') . '</a>'
             : '';
-        $h[] = '<div class="pm-rcinfo" style="float:right;text-align:right;">'
+        $h[] = '<div class="pm-rcinfo" style="float:right;text-align:right;margin-right:10px;margin-top:-30px;">'
             . '<span class="pm-rc-label">Roundcube: <strong>' . $rc_local_text . '</strong></span>'
             . ' &middot; '
             . '<span class="pm-rc-remote">' . ($rc_info['remote'] ? rcube::Q($this->gettext('version_remote')) . ': ' . $rc_remote_text : rcube::Q($this->gettext('remote_disabled'))) . '</span>'
