@@ -26,6 +26,7 @@ return [
   'krb_authentication' 			=> ['bundled' => true],
   'managesieve' 				=> ['bundled' => true],
   'markasjunk' 					=> ['bundled' => true],
+  'markdown_editor'				=> ['bundled' => true],
   'newmail_notifier' 			=> ['bundled' => true],
   'new_user_dialog' 			=> ['bundled' => true],
   'new_user_identity' 			=> ['bundled' => true],
