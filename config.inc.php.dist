@@ -119,6 +119,7 @@ $config['pm_hidden_plugins'] = array(
     'libcalendaring',
     'libkolab',
     'managesieve',
+    'markdown_editor',
     'markasjunk',
     'newmail_notifier',
     'new_user_dialog',
