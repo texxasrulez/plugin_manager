@@ -5,7 +5,7 @@
 
 class plugin_manager extends rcube_plugin
 {
-    const PLUGIN_VERSION = '1.4.2+dev';
+    const PLUGIN_VERSION = '1.0.0+dev';
     const PLUGIN_INFO = array(
         'name' => 'plugin_manager',
         'vendor' => 'Gene Hawkins / texxasrulez',
@@ -128,7 +128,10 @@ class plugin_manager extends rcube_plugin
 
         $this->add_texts('localization/');
         if ($this->rc->task === 'settings' && $this->rc->action === 'plugin.plugin_manager') {
+            $this->include_script('assets/ace/ace.js');
+            $this->include_script('assets/pm-ace-theme-guard.js');
             $this->include_script('plugin_manager.ui.js');
+            $this->include_stylesheet($this->local_skin_path() . '/plugin_manager_ace.css');
             $this->register_handler('plugin.body', array($this, 'render_page'));
         }
 

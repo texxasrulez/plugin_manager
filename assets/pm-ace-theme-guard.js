@@ -3,6 +3,27 @@
 // - Local-first, noconflict-first theme loading with robust CDN fallbacks
 // - Normalized theme aliases + "monokai override" protection
 // - Throttled re-apply on dynamic editor creation
+function pmDetectAceBase() {
+  try {
+    var current = document.currentScript;
+    var scripts = current ? [current] : Array.prototype.slice.call(document.getElementsByTagName('script'));
+    for (var i = 0; i < scripts.length; i++) {
+      var src = scripts[i] && scripts[i].src ? String(scripts[i].src) : '';
+      if (/\/pm-ace-theme-guard\.js(?:[?#].*)?$/.test(src)) {
+        return src.replace(/\/pm-ace-theme-guard\.js(?:[?#].*)?$/, '/ace');
+      }
+    }
+  } catch (_) {}
+
+  try {
+    var env = (window.rcmail && rcmail.env) || {};
+    if (env.pm_ace_base) return String(env.pm_ace_base).replace(/\/+$/, '');
+    if (env.pm_asset_base) return String(env.pm_asset_base).replace(/\/+$/, '') + '/ace';
+  } catch (_) {}
+
+  return 'assets/ace';
+}
+
 (function () {
   var defQ = [], reqQ = [];
 
@@ -19,8 +40,7 @@
 
     // Set basePath once Ace is adoptable
     try {
-      var env  = (window.rcmail && rcmail.env) || {};
-      var base = env.pm_ace_base || ((env.pm_asset_base || 'assets') + '/ace');
+      var base = pmDetectAceBase();
       ace.config.set('basePath', base);
     } catch (_) {}
 
@@ -68,7 +88,7 @@
     };
     if (aliases[desired]) desired = aliases[desired];
 
-    var base = env.pm_ace_base || ((env.pm_asset_base || 'assets') + '/ace');
+    var base = pmDetectAceBase();
 
     function loadScript(url){
       return new Promise(function(res, rej){

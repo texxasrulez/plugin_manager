@@ -10,6 +10,29 @@
   const RC = window.rcmail || window.rcmail || {};
   const TOKEN = (RC.env && RC.env.request_token) ? RC.env.request_token : null;
   const COMM = (RC.env && RC.env.comm_path) ? RC.env.comm_path : (window.location.search || '');
+
+  function detectPluginBase() {
+    const current = document.currentScript;
+    const scripts = current ? [current] : Array.from(document.getElementsByTagName('script'));
+    const match = scripts.find((el) => {
+      const src = el && el.src ? String(el.src) : '';
+      return /\/plugin_manager\.ui\.js(?:[?#].*)?$/.test(src);
+    });
+
+    if (match && match.src) {
+      return String(match.src).replace(/\/plugin_manager\.ui\.js(?:[?#].*)?$/, '');
+    }
+
+    if (RC.env && RC.env.pm_plugin_base) {
+      return String(RC.env.pm_plugin_base).replace(/\/+$/, '');
+    }
+
+    return 'plugins/plugin_manager';
+  }
+
+  function aceBasePath() {
+    return detectPluginBase() + '/assets/ace';
+  }
   function t(key, fallback) {
     try {
       if (RC.gettext) {
@@ -100,6 +123,10 @@
 
     function mountAce() {
       if (window.ace && ediv && !ediv._ace) {
+        if (ediv._plain && ediv.contains(ediv._plain)) {
+          ediv.removeChild(ediv._plain);
+          ediv._plain = null;
+        }
         const editor = window.ace.edit(ediv);
         ediv._ace = editor;
         editor.session.setMode('ace/mode/php');
@@ -116,25 +143,35 @@
         editor.setOptions({fontSize: '12px'});
         return editor;
       }
+
+      if (ediv && !ediv._plain) {
+        const ta = document.createElement('textarea');
+        ta.style.width = '100%';
+        ta.style.height = '100%';
+        ta.style.minHeight = '150px';
+        ta.style.boxSizing = 'border-box';
+        ta.value = initial || '';
+        ediv.textContent = '';
+        ediv.appendChild(ta);
+        ediv._plain = ta;
+      }
+
       return null;
     }
 
     let editor = mountAce();
-    if (!editor) {
-      // lazy load ACE from env
-      const base = (RC.env && RC.env.pm_ace_base)
-        ? RC.env.pm_ace_base
-        : (((RC.env && RC.env.pm_asset_base) ? RC.env.pm_asset_base : 'assets') + '/ace');
-      const s = document.createElement('script');
-      s.src = base.replace(/\/+$/,'') + '/ace.js';
-      s.onload = () => { editor = mountAce(); };
-      document.head.appendChild(s);
+    if (!editor && window.ace && window.ace.config) {
+      try {
+        window.ace.config.set('basePath', aceBasePath());
+        editor = mountAce();
+      } catch (e) {}
     }
 
     const saveBtn = document.getElementById('pm-ace-save');
     saveBtn.onclick = () => {
-      if (!editor) { toast(t('editor_not_ready','Editor not ready yet'), 'error'); return; }
-      const content = editor.getValue();
+      const content = editor
+        ? editor.getValue()
+        : (ediv && ediv._plain ? ediv._plain.value : '');
       const old = saveBtn.textContent;
       saveBtn.disabled = true;
       saveBtn.textContent = t('saving','Saving...');
