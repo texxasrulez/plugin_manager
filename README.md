@@ -12,6 +12,17 @@
 
 Lists installed plugins, shows local vs latest versions, and highlights **Update available**. Works with Larry, Elastic, and custom skins.
 
+## Versioning
+- `plugin_manager` now keeps its own canonical version in `plugin_manager::PLUGIN_VERSION` inside `plugin_manager.php`.
+- `plugin_manager::info()` exposes the plugin metadata array used for self-identification.
+- Development builds should use a `+dev` suffix such as `1.0.0+dev`.
+- Release builds should use a clean tagged version such as `1.0.0`.
+
+For a release bump:
+1. Update `plugin_manager::PLUGIN_VERSION` in `plugin_manager.php` or run `sh scripts/bump-version.sh 1.0.0`.
+2. Update `CHANGELOG.md`.
+3. Create the matching release tag after verification.
+
 ## Features
 - Discovers installed plugins
 - Shows local version (from composer.json, @version tags, or best-effort)

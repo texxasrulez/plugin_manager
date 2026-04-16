@@ -122,7 +122,9 @@
     let editor = mountAce();
     if (!editor) {
       // lazy load ACE from env
-      const base = (RC.env && RC.env.pm_ace_base) ? RC.env.pm_ace_base : 'plugins/plugin_manager/assets/ace';
+      const base = (RC.env && RC.env.pm_ace_base)
+        ? RC.env.pm_ace_base
+        : (((RC.env && RC.env.pm_asset_base) ? RC.env.pm_asset_base : 'assets') + '/ace');
       const s = document.createElement('script');
       s.src = base.replace(/\/+$/,'') + '/ace.js';
       s.onload = () => { editor = mountAce(); };

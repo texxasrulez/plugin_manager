@@ -5,6 +5,15 @@
 
 class plugin_manager extends rcube_plugin
 {
+    const PLUGIN_VERSION = '1.4.2+dev';
+    const PLUGIN_INFO = array(
+        'name' => 'plugin_manager',
+        'vendor' => 'Gene Hawkins / texxasrulez',
+        'version' => self::PLUGIN_VERSION,
+        'license' => 'AGPL-3.0',
+        'uri' => 'https://github.com/texxasrulez/plugin_manager',
+    );
+
     protected $home;
 
     private $installed_versions_file;
@@ -33,6 +42,27 @@ class plugin_manager extends rcube_plugin
     private $gh_token = '';
     private $hidden_plugins = array();
     private $visibility = 'mixed';
+
+    public static function info(): array
+    {
+        return self::PLUGIN_INFO;
+    }
+
+    private function pm_web_path($path = '')
+    {
+        $base = '';
+
+        if (!empty($this->urlbase) && is_string($this->urlbase)) {
+            $base = $this->urlbase;
+        } else {
+            $base = 'plugins/' . self::PLUGIN_INFO['name'];
+        }
+
+        $base = rtrim($base, '/');
+        $path = ltrim((string) $path, '/');
+
+        return $path === '' ? $base : ($base . '/' . $path);
+    }
 
     private function flash_add($message, $type = 'notice')
     {
@@ -78,8 +108,10 @@ class plugin_manager extends rcube_plugin
         }
 
         if ($this->rc && $this->rc->output) {
+            $this->rc->output->set_env('pm_plugin_base', $this->pm_web_path());
+            $this->rc->output->set_env('pm_asset_base', $this->pm_web_path('assets'));
             if (!isset($this->rc->output->env['pm_ace_base'])) {
-                $this->rc->output->set_env('pm_ace_base', 'plugins/plugin_manager/assets/ace');
+                $this->rc->output->set_env('pm_ace_base', $this->pm_web_path('assets/ace'));
             }
             $cfg = $this->rc->config;
             $this->rc->output->set_env('pm_ace_theme',       $cfg->get('pm_ace_theme', 'auto'));
@@ -96,6 +128,7 @@ class plugin_manager extends rcube_plugin
 
         $this->add_texts('localization/');
         if ($this->rc->task === 'settings' && $this->rc->action === 'plugin.plugin_manager') {
+            $this->include_script('plugin_manager.ui.js');
             $this->register_handler('plugin.body', array($this, 'render_page'));
         }
 
@@ -504,9 +537,6 @@ class plugin_manager extends rcube_plugin
         // Fit table to viewport
         $h[] = '<script>(function(){function footerHeight(){var f=document.querySelector("#footer")||document.querySelector(".footer")||document.querySelector(".taskbar");if(!f)return 32;var r=f.getBoundingClientRect();return Math.max(0,r.height||32);}function fit(){var c=document.querySelector(".pm-scroll");if(!c)return;var vh=window.innerHeight||document.documentElement.clientHeight||0;var rect=c.getBoundingClientRect();var fh=footerHeight();var pad=24;var h=Math.max(220,vh-rect.top-fh-pad);c.style.height=h+"px";c.style.overflow="auto";}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){fit();setTimeout(fit,150);setTimeout(fit,500);},{once:true});}else{fit();setTimeout(fit,150);setTimeout(fit,500);}window.addEventListener("resize",fit,{passive:true});})();</script>';
 
-        // Load UI JS file (web path)
-        $h[] = '<script src="plugins/plugin_manager/plugin_manager.ui.js"></script>';
-
         $h[] = '</div></div>';
 
         $html = implode("\n", $h);
@@ -647,6 +677,10 @@ class plugin_manager extends rcube_plugin
 
     private function detect_local_version($dir, $meta)
     {
+        if ($this->is_self_plugin_dir($dir)) {
+            return self::PLUGIN_VERSION;
+        }
+
         if (!empty($meta['composer']['version'])) {
             return (string)$meta['composer']['version'];
         }
@@ -1253,6 +1287,10 @@ class plugin_manager extends rcube_plugin
 
     private function pm_read_plugin_version($dir)
     {
+        if ($this->is_self_plugin_dir($dir)) {
+            return self::PLUGIN_VERSION;
+        }
+
         $vj = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'version.json';
         if (is_file($vj)) {
             $raw = @file_get_contents($vj);
@@ -1276,6 +1314,18 @@ class plugin_manager extends rcube_plugin
             if ($mt && $mt > $latest) $latest = $mt;
         }
         return 'local-' . gmdate('Y.m.d.His', $latest ?: time());
+    }
+
+    private function is_self_plugin_dir($dir)
+    {
+        $plugin_dir = realpath($this->home ?: dirname(__FILE__));
+        $dir_real = realpath($dir);
+
+        if ($plugin_dir && $dir_real) {
+            return $plugin_dir === $dir_real;
+        }
+
+        return rtrim((string)$dir, DIRECTORY_SEPARATOR) === rtrim($this->home ?: dirname(__FILE__), DIRECTORY_SEPARATOR);
     }
 
     public function pm_write_central_versions()

@@ -20,7 +20,7 @@
     // Set basePath once Ace is adoptable
     try {
       var env  = (window.rcmail && rcmail.env) || {};
-      var base = env.pm_ace_base || 'plugins/plugin_manager/assets/ace';
+      var base = env.pm_ace_base || ((env.pm_asset_base || 'assets') + '/ace');
       ace.config.set('basePath', base);
     } catch (_) {}
 
@@ -68,7 +68,7 @@
     };
     if (aliases[desired]) desired = aliases[desired];
 
-    var base = env.pm_ace_base || 'plugins/plugin_manager/assets/ace';
+    var base = env.pm_ace_base || ((env.pm_asset_base || 'assets') + '/ace');
 
     function loadScript(url){
       return new Promise(function(res, rej){
