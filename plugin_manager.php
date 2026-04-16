@@ -5,7 +5,7 @@
 
 class plugin_manager extends rcube_plugin
 {
-    const PLUGIN_VERSION = '1.5.0';
+    const PLUGIN_VERSION = '1.5.1';
     const PLUGIN_INFO = array(
         'name' => 'plugin_manager',
         'vendor' => 'Gene Hawkins / texxasrulez',
@@ -79,6 +79,68 @@ class plugin_manager extends rcube_plugin
         $this->rc->output->add_header("<script>\n" . $js . "\n</script>");
     }
 
+    private function pm_inline_style($file)
+    {
+        $path = __DIR__ . DIRECTORY_SEPARATOR . ltrim($file, DIRECTORY_SEPARATOR);
+        if (!is_readable($path) || !$this->rc || !$this->rc->output) {
+            return;
+        }
+
+        $css = @file_get_contents($path);
+        if (!is_string($css) || $css === '') {
+            return;
+        }
+
+        $this->rc->output->add_header("<style>\n" . $css . "\n</style>");
+    }
+
+    private function pm_normalize_ace_theme_name($theme)
+    {
+        $theme = trim((string) $theme);
+        if ($theme === '' || $theme === 'auto') {
+            return '';
+        }
+
+        if (strpos($theme, 'ace/theme/') === 0) {
+            $theme = substr($theme, strlen('ace/theme/'));
+        }
+
+        return preg_replace('/[^a-zA-Z0-9_]+/', '_', $theme);
+    }
+
+    private function pm_inline_ace_assets()
+    {
+        $themes = array('github', 'dracula');
+        $cfg = $this->rc ? $this->rc->config : null;
+
+        if ($cfg) {
+            foreach (array(
+                $cfg->get('pm_ace_theme', 'auto'),
+                $cfg->get('pm_ace_light_theme', 'github'),
+                $cfg->get('pm_ace_dark_theme', 'dracula'),
+            ) as $theme) {
+                $name = $this->pm_normalize_ace_theme_name($theme);
+                if ($name !== '') {
+                    $themes[] = $name;
+                }
+            }
+        }
+
+        $themes = array_values(array_unique($themes));
+
+        $this->pm_inline_style('assets/pm-ace.css');
+        $this->pm_inline_script('assets/ace/ace.js');
+        $this->pm_inline_script('assets/ace/mode-php.js');
+        $this->pm_inline_script('assets/ace/worker-php.js');
+        foreach ($themes as $theme) {
+            $file = 'assets/ace/theme-' . $theme . '.js';
+            $path = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $file);
+            if (is_readable($path)) {
+                $this->pm_inline_script($file);
+            }
+        }
+    }
+
     private function flash_add($message, $type = 'notice')
     {
         $file = $this->cache_file . '.flash';
@@ -143,6 +205,7 @@ class plugin_manager extends rcube_plugin
 
         $this->add_texts('localization/');
         if ($this->rc->task === 'settings' && $this->rc->action === 'plugin.plugin_manager') {
+            $this->pm_inline_ace_assets();
             $this->pm_inline_script('plugin_manager.ui.js');
             $this->register_handler('plugin.body', array($this, 'render_page'));
         }
@@ -318,6 +381,23 @@ class plugin_manager extends rcube_plugin
             th.pm-sort{cursor:pointer;user-select:none;}
             th.pm-sort.pm-sorted-asc::after{content:" \\25B2";}
             th.pm-sort.pm-sorted-desc::after{content:" \\25BC";}
+            .pm-diag-card{margin:10px 0 14px;padding:12px 14px;border:1px solid #d7dce2;border-radius:8px;background:#fbfcfd;text-align:left;}
+            .pm-diag-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+            .pm-diag-card-head h3{margin:0;font-size:14px;line-height:1.2;}
+            .pm-diag-pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef3f8;color:#425466;font-size:11px;font-weight:600;white-space:nowrap;}
+            .pm-diag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;}
+            .pm-diag-section{padding:10px 12px;border:1px solid #e5e9ef;border-radius:6px;background:#fff;}
+            .pm-diag-section-title{margin:0 0 8px 0;font-size:12px;font-weight:700;color:#5b6773;text-transform:uppercase;letter-spacing:.04em;}
+            .pm-diag-item{display:grid;grid-template-columns:140px minmax(0,1fr);gap:10px;padding:3px 0;align-items:start;}
+            .pm-diag-label{font-weight:600;color:#44505c;}
+            .pm-diag-value{color:#1f2933;word-break:break-word;}
+            .pm-diag-probes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px;}
+            .pm-diag-probe-card{padding:10px 12px;border:1px solid #e5e9ef;border-radius:6px;background:#fff;}
+            .pm-diag-probe-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+            .pm-diag-url,.pm-diag-meta{font-size:12px;line-height:1.4;word-break:break-word;color:#52606d;}
+            .pm-diag-ok,.pm-diag-fail{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;}
+            .pm-diag-ok{background:#e6f6ec;color:#18794e;}
+            .pm-diag-fail{background:#fdecec;color:#b42318;}
         </style>');
 
         $plugins = $this->discover_plugins();
@@ -383,7 +463,10 @@ class plugin_manager extends rcube_plugin
             $h[] = '<div class="pm-debug remote-off">'
                 . rcube::Q($this->gettext('debug_on')) . '. '
                 . rcube::Q($this->gettext('debug_on_text')) . '</div>';
-        }    
+        }
+        if ($this->diag) {
+            $h[] = $this->pm_render_diagnostics();
+        }
 
         // top controls
         $h[] = '<div style="margin:8px 0;">';
@@ -1596,6 +1679,108 @@ class plugin_manager extends rcube_plugin
             }
         }
         return $ts;
+    }
+
+    private function pm_diag_probe_url($url, $headers = array())
+    {
+        $status = 0;
+        $err = null;
+        $body = $this->http_get2($url, $headers, $status, $err);
+
+        return array(
+            'url' => $url,
+            'status' => (int) $status,
+            'ok' => ($status >= 200 && $status < 400),
+            'err' => $err,
+            'len' => is_string($body) ? strlen($body) : 0,
+        );
+    }
+
+    private function pm_collect_diagnostics()
+    {
+        $plugin_root = $this->plugins_root_dir();
+        $temp_dir = $this->config ? $this->config->get('temp_dir', sys_get_temp_dir()) : sys_get_temp_dir();
+        $headers = array('User-Agent: Roundcube-Plugin-Manager');
+        if (!empty($this->gh_token)) {
+            $headers[] = 'Authorization: token ' . $this->gh_token;
+        }
+
+        return array(
+            'generated_at' => date('c'),
+            'roundcube_version' => defined('RCMAIL_VERSION') ? RCMAIL_VERSION : (defined('RCUBE_VERSION') ? RCUBE_VERSION : 'unknown'),
+            'plugin_version' => self::PLUGIN_VERSION,
+            'remote_checks' => (bool) $this->remote_checks,
+            'http_timeout' => (int) $this->timeout,
+            'curl' => function_exists('curl_init'),
+            'zip' => class_exists('ZipArchive'),
+            'openssl' => extension_loaded('openssl'),
+            'allow_url_fopen' => (bool) ini_get('allow_url_fopen'),
+            'plugin_root' => $plugin_root,
+            'plugin_root_exists' => ($plugin_root && is_dir($plugin_root)),
+            'plugin_root_writable' => ($plugin_root && is_writable($plugin_root)),
+            'cache_file' => $this->cache_file,
+            'cache_dir_writable' => is_writable(dirname($this->cache_file)),
+            'temp_dir' => $temp_dir,
+            'temp_dir_writable' => is_dir($temp_dir) && is_writable($temp_dir),
+            'github_token_configured' => ($this->gh_token !== ''),
+            'packagist_probe' => $this->pm_diag_probe_url('https://repo.packagist.org/packages.json'),
+            'github_probe' => $this->pm_diag_probe_url('https://api.github.com/rate_limit', $headers),
+        );
+    }
+
+    private function pm_render_diagnostics()
+    {
+        $diag = $this->pm_collect_diagnostics();
+        $summary_rows = array(
+            array('label' => 'Generated', 'value' => $diag['generated_at']),
+            array('label' => 'Roundcube', 'value' => $diag['roundcube_version']),
+            array('label' => 'Plugin', 'value' => $diag['plugin_version']),
+            array('label' => 'Remote checks', 'value' => $diag['remote_checks'] ? 'Enabled' : 'Disabled'),
+            array('label' => 'HTTP timeout', 'value' => $diag['http_timeout'] . 's'),
+            array('label' => 'cURL', 'value' => $diag['curl'] ? 'Available' : 'Missing'),
+            array('label' => 'ZipArchive', 'value' => $diag['zip'] ? 'Available' : 'Missing'),
+            array('label' => 'OpenSSL', 'value' => $diag['openssl'] ? 'Loaded' : 'Missing'),
+            array('label' => 'allow_url_fopen', 'value' => $diag['allow_url_fopen'] ? 'On' : 'Off'),
+            array('label' => 'GitHub token', 'value' => $diag['github_token_configured'] ? 'Configured' : 'Not set'),
+        );
+
+        $path_rows = array(
+            array('label' => 'Plugin root', 'value' => $diag['plugin_root'] ?: 'not found'),
+            array('label' => 'Plugin root writable', 'value' => $diag['plugin_root_writable'] ? 'Yes' : 'No'),
+            array('label' => 'Cache file', 'value' => $diag['cache_file']),
+            array('label' => 'Cache dir writable', 'value' => $diag['cache_dir_writable'] ? 'Yes' : 'No'),
+            array('label' => 'Temp dir', 'value' => $diag['temp_dir']),
+            array('label' => 'Temp dir writable', 'value' => $diag['temp_dir_writable'] ? 'Yes' : 'No'),
+        );
+
+        $probe_cards = '';
+        foreach (array('packagist_probe' => 'Packagist', 'github_probe' => 'GitHub API') as $key => $label) {
+            $probe = $diag[$key];
+            $status_class = $probe['ok'] ? 'pm-diag-ok' : 'pm-diag-fail';
+            $meta = 'HTTP ' . intval($probe['status']) . ($probe['err'] ? (' • ' . $probe['err']) : (' • ' . intval($probe['len']) . ' bytes'));
+            $probe_cards .= '<div class="pm-diag-probe-card">'
+                . '<div class="pm-diag-probe-head"><strong>' . rcube::Q($label) . '</strong><span class="' . $status_class . '">' . ($probe['ok'] ? 'OK' : 'Fail') . '</span></div>'
+                . '<div class="pm-diag-url">' . rcube::Q($probe['url']) . '</div>'
+                . '<div class="pm-diag-meta">' . rcube::Q($meta) . '</div>'
+                . '</div>';
+        }
+
+        $render_rows = function ($rows) {
+            $html = '';
+            foreach ($rows as $row) {
+                $html .= '<div class="pm-diag-item"><span class="pm-diag-label">' . rcube::Q($row['label']) . '</span><span class="pm-diag-value">' . rcube::Q($row['value']) . '</span></div>';
+            }
+            return $html;
+        };
+
+        return '<div class="pm-diag-card">'
+            . '<div class="pm-diag-card-head"><h3>' . rcube::Q($this->gettext('conn_diag') ?: 'Connectivity diagnostics') . '</h3><span class="pm-diag-pill">' . rcube::Q($this->gettext('diag_running') ?: 'Diagnostics Running') . '</span></div>'
+            . '<div class="pm-diag-grid">'
+            . '<div class="pm-diag-section"><div class="pm-diag-section-title">Environment</div>' . $render_rows($summary_rows) . '</div>'
+            . '<div class="pm-diag-section"><div class="pm-diag-section-title">Paths</div>' . $render_rows($path_rows) . '</div>'
+            . '</div>'
+            . '<div class="pm-diag-probes">' . $probe_cards . '</div>'
+            . '</div>';
     }
 
     private function sanitize_selected_plugins($selected)

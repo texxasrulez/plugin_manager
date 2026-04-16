@@ -199,8 +199,3 @@ th.pm-sort.pm-sorted-asc::after {
 th.pm-sort.pm-sorted-desc::after {
   content:" \\25BC";
 }
-
-pm-rcinfo {
-  float: right;
-  text-align:right;
-}

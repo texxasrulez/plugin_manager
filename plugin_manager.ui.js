@@ -127,9 +127,18 @@
           ediv.removeChild(ediv._plain);
           ediv._plain = null;
         }
+        try {
+          if (window.ace.config && window.ace.require) {
+            const workerModule = window.ace.require('ace/mode/php_worker');
+            if (workerModule) {
+              window.ace.config.setModuleUrl('ace/mode/php_worker', workerModule);
+            }
+          }
+        } catch (e) {}
         const editor = window.ace.edit(ediv);
         ediv._ace = editor;
         editor.session.setMode('ace/mode/php');
+        editor.session.setUseWorker(false);
         const theme = (RC.env && RC.env.pm_ace_theme && RC.env.pm_ace_theme !== 'auto')
           ? RC.env.pm_ace_theme
           : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? (RC.env && RC.env.pm_ace_dark_theme) || 'ace/theme/dracula' : (RC.env && RC.env.pm_ace_light_theme) || 'ace/theme/github');
