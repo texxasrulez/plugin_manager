@@ -64,6 +64,21 @@ class plugin_manager extends rcube_plugin
         return $path === '' ? $base : ($base . '/' . $path);
     }
 
+    private function pm_inline_script($file)
+    {
+        $path = __DIR__ . DIRECTORY_SEPARATOR . ltrim($file, DIRECTORY_SEPARATOR);
+        if (!is_readable($path) || !$this->rc || !$this->rc->output) {
+            return;
+        }
+
+        $js = @file_get_contents($path);
+        if (!is_string($js) || $js === '') {
+            return;
+        }
+
+        $this->rc->output->add_header("<script>\n" . $js . "\n</script>");
+    }
+
     private function flash_add($message, $type = 'notice')
     {
         $file = $this->cache_file . '.flash';
@@ -128,10 +143,7 @@ class plugin_manager extends rcube_plugin
 
         $this->add_texts('localization/');
         if ($this->rc->task === 'settings' && $this->rc->action === 'plugin.plugin_manager') {
-            $this->include_script('assets/ace/ace.js');
-            $this->include_script('assets/pm-ace-theme-guard.js');
-            $this->include_script('plugin_manager.ui.js');
-            $this->include_stylesheet($this->local_skin_path() . '/plugin_manager_ace.css');
+            $this->pm_inline_script('plugin_manager.ui.js');
             $this->register_handler('plugin.body', array($this, 'render_page'));
         }
 
@@ -224,14 +236,21 @@ class plugin_manager extends rcube_plugin
         if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
             $pm_all = rcube_utils::get_input_value('_pm_update_all', rcube_utils::INPUT_GPC);
             $pm_dry = rcube_utils::get_input_value('_pm_dry', rcube_utils::INPUT_GPC) ? true : false;
-            $this->log_debug('bulk_handler', array('where'=>'action_list', 'pm_all'=>$pm_all, 'pm_dry'=>$pm_dry));
+            $pm_selected = rcube_utils::get_input_value('_pm_selected', rcube_utils::INPUT_GPC);
+            $selected = $this->sanitize_selected_plugins($pm_selected);
+            $this->log_debug('bulk_handler', array('where'=>'action_list', 'pm_all'=>$pm_all, 'pm_dry'=>$pm_dry, 'selected'=>$selected));
             if ($pm_all) {
                 if (!$this->request_token_valid()) {
                     $this->flash_add($this->gettext('not_authorized'), 'error');
                     $this->rc->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
                     return;
                 }
-                $res = $this->update_all_outdated($pm_dry);
+                if ($pm_selected !== null && empty($selected)) {
+                    $this->flash_add($this->gettext('no_plugins_selected') ?: 'No plugins selected.', 'warning');
+                    $this->rc->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
+                    return;
+                }
+                $res = $this->update_all_outdated($pm_dry, $selected);
                 $summary = $pm_dry
                     ? sprintf(rcube::Q($this->gettext('testing_complete')) . ': %d would update, %d would fail, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']))
                     : sprintf(rcube::Q($this->gettext('bulk_update_complete')) . ': %d updated, %d failed, %d skipped.', (int)$res['ok'], (int)$res['fail'], (int)count($res['skipped']));
@@ -532,7 +551,7 @@ class plugin_manager extends rcube_plugin
 
 
         // Busy text + basic handlers
-        $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");var token=this.getAttribute("data-token")||"";var url="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1";if(token){url+="&_token="+encodeURIComponent(token);}window.location.href=url;});}})();</script>';
+        $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){var selected=Array.prototype.slice.call(document.querySelectorAll(".pm-select:checked")).map(function(el){return el.getAttribute("data-dir")||"";}).filter(Boolean);if(!selected.length){alert("'. rcube::Q($this->gettext('no_plugins_selected') ?: 'No plugins selected.') .'");return;}setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");var token=this.getAttribute("data-token")||"";var url="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1&_pm_selected="+encodeURIComponent(selected.join(","));if(token){url+="&_token="+encodeURIComponent(token);}window.location.href=url;});}})();</script>';
 
         // Column sorting
         $h[] = '<script>(function(){var table=document.getElementById("pm-table");if(!table)return;var thead=table.tHead,tbody=table.tBodies[0];if(!thead||!tbody)return;function txt(el){return(el&&(el.textContent||el.innerText)||"").trim();}function parseSemver(v){v=(v||"").trim();if(!v||v==="—")return{k:[-1]};var vl=v.toLowerCase();if(vl==="unknown"||vl==="unk"||vl==="?")return{k:[-1]};v=v.replace(/^v/i,"");var parts=v.split(/[^0-9a-zA-Z]+/).filter(Boolean);var out=[];for(var i=0;i<parts.length;i++){var p=parts[i];if(/^\d+$/.test(p))out.push(parseInt(p,10));else out.push(-0.5);}return{k:out,raw:v};}function cmpCells(aCell,bCell,type){if(type==="bool"){var av=parseInt(aCell.getAttribute("data-sort")||"0",10);var bv=parseInt(bCell.getAttribute("data-sort")||"0",10);return av-bv;}if(type==="semver"){var sa=parseSemver(txt(aCell)).k,sb=parseSemver(txt(bCell)).k;var n=Math.max(sa.length,sb.length);for(var i=0;i<n;i++){var ai=(i<sa.length)?sa[i]:0,bi=(i<sb.length)?sb[i]:0;if(ai!==bi)return ai-bi;}return 0;}var a=txt(aCell).toLowerCase(),b=txt(bCell).toLowerCase();if(a===b)return 0;return a>b?1:-1;}var headers=thead.rows[0].cells;var state={col:null,dir:"asc"};function clearIndicators(){for(var i=0;i<headers.length;i++){headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");headers[i].removeAttribute("aria-sort");}}function sortBy(colIndex,type,dir){var rows=Array.prototype.slice.call(tbody.rows);rows.sort(function(r1,r2){var c1=r1.cells[colIndex]||document.createElement("td");var c2=r2.cells[colIndex]||document.createElement("td");var c=cmpCells(c1,c2,type);return dir==="asc"?c:-c;});var frag=document.createDocumentFragment();rows.forEach(function(r){frag.appendChild(r);});tbody.appendChild(frag);clearIndicators();var th=headers[colIndex];th.classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");th.setAttribute("aria-sort",dir==="asc"?"ascending":"descending");}for(let i=0;i<headers.length;i++){let th=headers[i];if(!th.classList.contains("pm-sort"))continue;th.addEventListener("click",function(){var type=th.getAttribute("data-type")||"text";if(state.col===i){state.dir=(state.dir==="asc"?"desc":"asc");}else{state.col=i;state.dir="asc";}sortBy(i,type,state.dir);});}})();</script>';
@@ -1579,13 +1598,42 @@ class plugin_manager extends rcube_plugin
         return $ts;
     }
 
-    private function update_all_outdated($dry = false)
+    private function sanitize_selected_plugins($selected)
+    {
+        if ($selected === null || $selected === '') {
+            return array();
+        }
+
+        if (!is_array($selected)) {
+            $selected = explode(',', (string) $selected);
+        }
+
+        $out = array();
+        foreach ($selected as $item) {
+            $item = trim((string) $item);
+            if ($item === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $item)) {
+                continue;
+            }
+            $out[$item] = true;
+        }
+
+        return array_keys($out);
+    }
+
+    private function update_all_outdated($dry = false, array $selected = array())
     {
         $result = array('ok'=>0,'fail'=>0,'skipped'=>array());
+        $selected_lookup = array();
+        foreach ($selected as $name) {
+            $selected_lookup[(string) $name] = true;
+        }
         $plugins = $this->discover_plugins();
         foreach ($plugins as $info) {
             $dir = $info['dir'];
             $base = basename($dir);
+            if (!empty($selected_lookup) && empty($selected_lookup[$base])) {
+                continue;
+            }
             $policy = $this->policy_for($base);
             if (!empty($policy['ignored']['bulk'])) {
                 $result['skipped'][] = array('dir'=>$base,'reason'=>'ignored_bulk');
