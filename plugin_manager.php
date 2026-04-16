@@ -5,7 +5,7 @@
 
 class plugin_manager extends rcube_plugin
 {
-    const PLUGIN_VERSION = '1.0.0+dev';
+    const PLUGIN_VERSION = '1.5.0';
     const PLUGIN_INFO = array(
         'name' => 'plugin_manager',
         'vendor' => 'Gene Hawkins / texxasrulez',
