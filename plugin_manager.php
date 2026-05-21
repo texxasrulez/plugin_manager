@@ -5,7 +5,7 @@
 
 class plugin_manager extends rcube_plugin
 {
-    const PLUGIN_VERSION = '1.5.2';
+    const PLUGIN_VERSION = '1.6.0';
     const PLUGIN_INFO = array(
         'name' => 'plugin_manager',
         'vendor' => 'Gene Hawkins / texxasrulez',
@@ -19,6 +19,7 @@ class plugin_manager extends rcube_plugin
     private $installed_versions_file;
     private $data_dir;
     private $central_version_file;
+    private $maintenance_audit_file;
 
     private $remote_checks = true;
     public $task = 'settings';
@@ -42,6 +43,10 @@ class plugin_manager extends rcube_plugin
     private $gh_token = '';
     private $hidden_plugins = array();
     private $visibility = 'mixed';
+    private $last_post_update_advisory = null;
+    private $post_update_hooks = array();
+    private $maintenance_audit_enabled = true;
+    private $maintenance_audit_limit = 100;
 
     public static function info(): array
     {
@@ -180,6 +185,7 @@ class plugin_manager extends rcube_plugin
         }
 
         $this->pm_load_config();
+        $this->pm_bootstrap_version_data();
         if ($this->cfg_true('pm_write_central_on_init', true) && method_exists($this, 'pm_write_central_versions')) {
             $this->pm_write_central_versions();
         }
@@ -200,6 +206,8 @@ class plugin_manager extends rcube_plugin
         $this->register_action('plugin_manager.refresh', array($this, 'action_refresh'));
         $this->register_action('plugin.plugin_manager.update', array($this, 'action_update'));
         $this->register_action('plugin.plugin_manager.restore', array($this, 'action_restore'));
+        $this->register_action('plugin.plugin_manager.delete_backups', array($this, 'action_delete_backups'));
+        $this->register_action('plugin.plugin_manager.run_maintenance', array($this, 'action_run_maintenance'));
         $this->register_action('plugin.plugin_manager.load_config', array($this, 'action_load_config'));
         $this->register_action('plugin.plugin_manager.save_config', array($this, 'action_save_config'));
 
@@ -234,6 +242,10 @@ class plugin_manager extends rcube_plugin
         $this->diag          = isset($_GET['_pm_diag']);
         $this->gh_token      = (string)$this->config->get('pm_github_token', '');
         $this->visibility    = (string)$this->config->get('pm_visibility', 'mixed');
+        $hooks = $this->config->get('pm_post_update_hooks', array());
+        $this->post_update_hooks = is_array($hooks) ? $hooks : array();
+        $this->maintenance_audit_enabled = (bool) $this->config->get('pm_maintenance_audit_enabled', true);
+        $this->maintenance_audit_limit = max(1, (int) $this->config->get('pm_maintenance_audit_limit', 100));
 
         $this->hidden_plugins = array();
         $hp = $this->config->get('pm_hidden_plugins', array());
@@ -322,6 +334,16 @@ class plugin_manager extends rcube_plugin
                     $detail = rcube::Q($this->gettext('details')) . ': ' . $this->format_skip_reasons($res['skipped']);
                     $this->flash_add($detail, 'notice');
                 }
+                if (!$pm_dry && !empty($res['advisories'])) {
+                    foreach ($res['advisories'] as $advisory) {
+                        $this->flash_post_update_advisory($advisory);
+                    }
+                }
+                if (!$pm_dry && !empty($res['hooks'])) {
+                    foreach ($res['hooks'] as $hook_result) {
+                        $this->flash_post_update_hook_result($hook_result, isset($hook_result['plugin']) ? (string) $hook_result['plugin'] : '');
+                    }
+                }
                 $this->rc->output->redirect(array('_task'=>'settings','_action'=>'plugin.plugin_manager'));
                 return;
             }
@@ -398,6 +420,29 @@ class plugin_manager extends rcube_plugin
             .pm-diag-ok,.pm-diag-fail{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;}
             .pm-diag-ok{background:#e6f6ec;color:#18794e;}
             .pm-diag-fail{background:#fdecec;color:#b42318;}
+            .pm-bulkbar .pm-delete-selected-backups{border-color:#b42318;background:#fef3f2;color:#8a1c12;}
+            .pm-bulkbar .pm-delete-selected-backups:hover,
+            .pm-bulkbar .pm-delete-selected-backups:focus{background:#fde2e0;color:#75160f;}
+            .pm-bulkbar .button[disabled]{opacity:.55;cursor:not-allowed;}
+            .pm-maintenance-link{font-weight:600;color:#0b5cad;}
+            .pm-maintenance-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;vertical-align:middle;}
+            .pm-maintenance-none{display:none;}
+            .pm-maintenance-advisory{background:#fff7e6;color:#9a6700;}
+            .pm-maintenance-available{background:#eef5ff;color:#0b5cad;}
+            .pm-maintenance-blocked{background:#fdecec;color:#b42318;}
+            .pm-maintenance-ran_recently{background:#e6f6ec;color:#18794e;}
+            .pm-maint-activity{margin:12px 0 14px;padding:10px 12px;border:1px solid #d7dce2;border-radius:8px;background:#fbfcfd;}
+            .pm-maint-activity h3{margin:0 0 8px 0;font-size:13px;}
+            .pm-maint-activity table{width:100%;border-collapse:collapse;font-size:12px;}
+            .pm-maint-activity th,.pm-maint-activity td{padding:6px 8px;text-align:left;border-top:1px solid #e5e9ef;vertical-align:top;}
+            .pm-maint-activity th{font-weight:700;color:#5b6773;border-top:none;}
+            .pm-maint-result{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;text-transform:capitalize;}
+            .pm-maint-result-success{background:#e6f6ec;color:#18794e;}
+            .pm-maint-result-warning{background:#fff7e6;color:#9a6700;}
+            .pm-maint-result-failure,.pm-maint-result-refused{background:#fdecec;color:#b42318;}
+            .pm-maint-result-skipped{background:#eef3f8;color:#425466;}
+            .pm-maint-activity-toggle{margin:12px 0 8px;display:flex;justify-content:flex-end;}
+            .pm-maint-activity-toggle label{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#425466;}
         </style>');
 
         $plugins = $this->discover_plugins();
@@ -508,11 +553,17 @@ class plugin_manager extends rcube_plugin
         // bulk toolbar
         if ($this->cfg_true('pm_enable_update_select', true) && $this->is_update_admin()) {
             $h[] = '<div class="pm-bulkbar" style="margin:10px 0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
-            $h[] = '<button class="button pm-update-selected" data-token="' . rcube::Q($token) . '" type="button">' . rcube::Q($this->gettext('update_selected') ?: 'Update Selected') . '</button>';
+            $h[] = '<button class="button pm-update-selected" data-token="' . rcube::Q($token) . '" type="button" disabled>' . rcube::Q($this->gettext('update_selected') ?: 'Update Selected') . '</button>';
+            $h[] = '<button class="button pm-delete-selected-backups" data-token="' . rcube::Q($token) . '" type="button" disabled>' . rcube::Q($this->gettext('delete_selected_backups') ?: 'Delete selected backups') . '</button>';
             $h[] = '<label><input type="checkbox" class="pm-only-outdated" /> ' . rcube::Q($this->gettext('only_outdated') ?: 'Only outdated') . '</label>';
             $h[] = '<label><input type="checkbox" class="pm-only-enabled" /> ' . rcube::Q($this->gettext('only_enabled') ?: 'Only enabled') . '</label>';
             $h[] = '<label><input type="checkbox" class="pm-only-errors" /> ' . rcube::Q($this->gettext('only_errors') ?: 'Only errors') . '</label>';
             $h[] = '</div>';
+        }
+
+        $audit_html = '';
+        if ($this->is_update_admin()) {
+            $audit_html = $this->render_maintenance_activity_panel();
         }
 
         // table
@@ -544,7 +595,7 @@ class plugin_manager extends rcube_plugin
             $plugins_root = $this->plugins_root_dir();
             if ($plugins_root) {
                 $plugdir = $plugins_root . DIRECTORY_SEPARATOR . $dir_name;
-                $baks = (array)glob($plugdir . '.bak-*', GLOB_NOSORT);
+                $baks = $this->find_plugin_backup_dirs($dir_name);
                 if (!empty($baks)) {
                     usort($baks, function($a,$b){ return filemtime($b) <=> filemtime($a); });
                     $latest_bak = basename($baks[0]);
@@ -604,6 +655,23 @@ class plugin_manager extends rcube_plugin
                 $links_html[] = '<a target="_blank" rel="noreferrer" href="'.rcube::Q($r['links']['github']).'">' . rcube::Q($this->gettext('github')) . '</a>';
             }
 
+            $maintenance_link = '';
+            $badge = $this->get_plugin_maintenance_badge_data($dir_name);
+            $maintenance_badge = $badge['state'] !== 'none'
+                ? '<span class="pm-maintenance-badge pm-maintenance-' . rcube::Q($badge['state']) . '" title="' . rcube::Q($badge['title']) . '">' . rcube::Q($badge['label']) . '</span>'
+                : '';
+            if ($this->is_update_admin() && $this->should_show_manual_maintenance_link($dir_name)) {
+                $maintenance_url = $this->rc->url(array(
+                    '_task' => 'settings',
+                    '_action' => 'plugin.plugin_manager.run_maintenance',
+                    '_pm' => $dir_name,
+                    '_token' => $token,
+                ));
+                $hook_cfg = $this->get_post_update_hook_config($dir_name);
+                $maintenance_label = $this->get_manual_maintenance_label($dir_name, is_array($hook_cfg) ? $hook_cfg : array());
+                $maintenance_link = '<a class="pm-maintenance-link" href="' . rcube::Q($maintenance_url) . '" data-confirm="' . rcube::Q($this->gettext('maintenance_confirm') ?: 'Run allowlisted maintenance for this plugin? This may perform plugin-specific post-update tasks.') . '" data-busy="' . rcube::Q($this->gettext('maintenance_running') ?: 'Running maintenance ... ') . '">[' . rcube::Q($maintenance_label) . ']</a>';
+            }
+
             $en_label_yes = rcube::Q($this->gettext('enabled'));
             $en_label_no  = rcube::Q($this->gettext('disabled'));
             $en_html = $r['enabled'] ? '<strong class="pm-enabled">' . $en_label_yes . '</strong>' : '<strong class="pm-disabled">' . $en_label_no . '</strong>';
@@ -622,8 +690,8 @@ class plugin_manager extends rcube_plugin
                 $edit_link = '';
             }
 				$h[] = '<tr data-outdated="' . ($is_outdated ? '1' : '0') . '" data-enabled="' . ($r['enabled'] ? '1' : '0') . '" data-error="' . ($has_error ? '1' : '0') . '">'
-                . '<td style="text-align:center;"><input type="checkbox" class="pm-select" data-dir="' . rcube::Q($dir_name) . '"></td>'
-                . '<td style="text-align:left;"><strong>' . rcube::Q($r['name']) . '</strong> &nbsp; ' . $edit_link . '</td>'
+                . '<td style="text-align:center;"><input type="checkbox" class="pm-select" data-dir="' . rcube::Q($dir_name) . '" data-backup-count="' . count($baks) . '"></td>'
+                . '<td style="text-align:left;"><strong>' . rcube::Q($r['name']) . '</strong>' . $maintenance_badge . ' &nbsp; ' . $edit_link . ($maintenance_link !== '' ? ' &nbsp; ' . $maintenance_link : '') . '</td>'
                 . '<td style="text-align:left;">' . rcube::Q($r['dir']) . '</td>'
                 . '<td data-sort="' . $en_sort . '" style="text-align:left;">' . $en_html . '</td>'
                 . '<td style="text-align:left;">' . rcube::Q($r['local']) . '</td>'
@@ -634,12 +702,16 @@ class plugin_manager extends rcube_plugin
         }
 
         $h[] = '</tbody></table>';
+        if ($this->is_update_admin() && $audit_html !== '') {
+            $h[] = '<div class="pm-maint-activity-toggle"><label><input type="checkbox" class="pm-hide-maint-activity" /> ' . rcube::Q($this->gettext('maintenance_hide_activity') ?: 'Hide recent maintenance activity') . '</label></div>';
+            $h[] = $audit_html;
+        }
         $h[] = '</div>'; // .pm-scroll
         $h[] = '<script>(function(){var t=document.getElementById("pm-table");if(!t)return;function v(s){if(!s)return[];s=(s+"").trim().replace(/^v/i,"");var m=s.match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);if(!m)return[0,0,0];return[parseInt(m[1]||0,10),parseInt(m[2]||0,10),parseInt(m[3]||0,10)];}function key(td,type){var raw=td.getAttribute("data-sort");if(raw==null)raw=td.textContent||td.innerText||"";raw=(raw+"").trim();if(type==="number"||type==="bool"){var n=parseFloat(raw);if(isNaN(n))n=0;return n;}if(type==="semver"){return v(raw);}if(type==="status"){var l=raw.toLowerCase().replace(/\s+/g,"_");if(/^\d+$/.test(raw))return parseInt(raw,10);var map={"update_available":0,"up_to_date":1,"bundled":2,"unknown":3};return map.hasOwnProperty(l)?map[l]:9;}return raw.toLowerCase();}function cmp(a,b){if(Array.isArray(a)&&Array.isArray(b)){for(var i=0;i<Math.max(a.length,b.length);i++){var av=a[i]||0,bv=b[i]||0;if(av<bv)return-1;if(av>bv)return 1;}return 0;}if(a<b)return-1;if(a>b)return 1;return 0;}function clear(th){var ths=th.parentNode.querySelectorAll("th.pm-sort");for(var i=0;i<ths.length;i++){ths[i].classList.remove("pm-sorted-asc");ths[i].classList.remove("pm-sorted-desc");}}function sortBy(th){var idx=Array.prototype.indexOf.call(th.parentNode.children,th);var type=th.getAttribute("data-type")||"text";var tbody=t.querySelector("tbody");if(!tbody)return;var rows=Array.prototype.slice.call(tbody.querySelectorAll("tr"));var asc=!th.classList.contains("pm-sorted-asc");rows.sort(function(r1,r2){var c1=r1.children[idx],c2=r2.children[idx];var k1=key(c1,type),k2=key(c2,type);return asc?cmp(k1,k2):cmp(k2,k1);});var frag=document.createDocumentFragment();rows.forEach(function(r){frag.appendChild(r);});tbody.appendChild(frag);clear(th);th.classList.add(asc?"pm-sorted-asc":"pm-sorted-desc");}var hs=t.querySelectorAll("th.pm-sort");for(var i=0;i<hs.length;i++){(function(th){th.addEventListener("click",function(){sortBy(th);});})(hs[i]);}})();</script>';
 
 
         // Busy text + basic handlers
-        $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}function syncRowState(cb){var row=cb&&cb.closest?cb.closest("tr"):null;if(row)row.classList.toggle("selected",!!cb.checked);}function applyFilters(){var rows=Array.prototype.slice.call(document.querySelectorAll("#pm-table tbody tr"));var onlyOutdated=document.querySelector(".pm-only-outdated");var onlyEnabled=document.querySelector(".pm-only-enabled");var onlyErrors=document.querySelector(".pm-only-errors");rows.forEach(function(row){var show=true;if(onlyOutdated&&onlyOutdated.checked&&row.getAttribute("data-outdated")!=="1")show=false;if(onlyEnabled&&onlyEnabled.checked&&row.getAttribute("data-enabled")!=="1")show=false;if(onlyErrors&&onlyErrors.checked&&row.getAttribute("data-error")!=="1")show=false;row.style.display=show?"":"none";});}function syncOutdatedSelection(){var onlyOutdated=document.querySelector(".pm-only-outdated");if(!onlyOutdated)return;var boxes=Array.prototype.slice.call(document.querySelectorAll("#pm-table tbody .pm-select"));boxes.forEach(function(box){var row=box.closest("tr");if(!row||row.getAttribute("data-outdated")!=="1")return;if(onlyOutdated.checked){box.checked=true;box.dataset.pmAutoSelected="outdated";}else if(box.dataset.pmAutoSelected==="outdated"){box.checked=false;delete box.dataset.pmAutoSelected;}syncRowState(box);});}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});Array.prototype.slice.call(document.querySelectorAll("#pm-table tbody .pm-select")).forEach(function(box){syncRowState(box);box.addEventListener("change",function(){if(box.dataset.pmAutoSelected&&(!document.querySelector(".pm-only-outdated")||!document.querySelector(".pm-only-outdated").checked||!box.checked)){delete box.dataset.pmAutoSelected;}syncRowState(box);});});Array.prototype.slice.call(document.querySelectorAll(".pm-only-outdated,.pm-only-enabled,.pm-only-errors")).forEach(function(filterBox){filterBox.addEventListener("change",function(){if(filterBox.classList.contains("pm-only-outdated"))syncOutdatedSelection();applyFilters();});});syncOutdatedSelection();applyFilters();var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){var selected=Array.prototype.slice.call(document.querySelectorAll(".pm-select:checked")).map(function(el){return el.getAttribute("data-dir")||"";}).filter(Boolean);if(!selected.length){alert("'. rcube::Q($this->gettext('no_plugins_selected') ?: 'No plugins selected.') .'");return;}setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");var token=this.getAttribute("data-token")||"";var url="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1&_pm_selected="+encodeURIComponent(selected.join(","));if(token){url+="&_token="+encodeURIComponent(token);}window.location.href=url;});}})();</script>';
+        $h[] = '<script>(function(){function setBusy(el,txt){if(!el||el.classList.contains("pm-busy"))return;el.dataset.originalText=el.textContent;el.textContent=txt;el.classList.add("pm-busy");el.setAttribute("aria-busy","true");}function syncRowState(cb){var row=cb&&cb.closest?cb.closest("tr"):null;if(row)row.classList.toggle("selected",!!cb.checked);}function getSelectedBoxes(){return Array.prototype.slice.call(document.querySelectorAll(".pm-select:checked")).filter(function(el){return !!(el.getAttribute("data-dir")||"");});}function getSelectedPlugins(){return getSelectedBoxes().map(function(el){return el.getAttribute("data-dir")||"";}).filter(Boolean);}function getSelectedBackupCount(){return getSelectedBoxes().reduce(function(total,el){var count=parseInt(el.getAttribute("data-backup-count")||"0",10);return total+(isNaN(count)?0:count);},0);}function updateBulkButtons(){var count=getSelectedBoxes().length;Array.prototype.slice.call(document.querySelectorAll(".pm-update-selected,.pm-delete-selected-backups")).forEach(function(btn){btn.disabled=count===0;btn.setAttribute("aria-disabled",count===0?"true":"false");});}function applyFilters(){var rows=Array.prototype.slice.call(document.querySelectorAll("#pm-table tbody tr"));var onlyOutdated=document.querySelector(".pm-only-outdated");var onlyEnabled=document.querySelector(".pm-only-enabled");var onlyErrors=document.querySelector(".pm-only-errors");rows.forEach(function(row){var show=true;if(onlyOutdated&&onlyOutdated.checked&&row.getAttribute("data-outdated")!=="1")show=false;if(onlyEnabled&&onlyEnabled.checked&&row.getAttribute("data-enabled")!=="1")show=false;if(onlyErrors&&onlyErrors.checked&&row.getAttribute("data-error")!=="1")show=false;row.style.display=show?"":"none";});}function syncOutdatedSelection(){var onlyOutdated=document.querySelector(".pm-only-outdated");if(!onlyOutdated)return;var boxes=Array.prototype.slice.call(document.querySelectorAll("#pm-table tbody .pm-select"));boxes.forEach(function(box){var row=box.closest("tr");if(!row||row.getAttribute("data-outdated")!=="1")return;if(onlyOutdated.checked){box.checked=true;box.dataset.pmAutoSelected="outdated";}else if(box.dataset.pmAutoSelected==="outdated"){box.checked=false;delete box.dataset.pmAutoSelected;}syncRowState(box);});updateBulkButtons();}function confirmDeleteBackups(selectedCount,backupCount){var msg="'. rcube::Q($this->gettext('delete_backups_confirm') ?: 'Delete backup folders for the selected plugins? This does not delete the live plugins.') .'";var extra=backupCount>0?" ("+backupCount+" backups)":"";if(msg.indexOf("%d")!==-1||msg.indexOf("%s")!==-1){msg=msg.replace("%d",String(selectedCount)).replace("%s",extra);}else if(backupCount>0){msg+=" ("+backupCount+" backups)";}return window.confirm(msg);}function applyMaintenanceActivityVisibility(){var toggle=document.querySelector(".pm-hide-maint-activity");var panel=document.querySelector(".pm-maint-activity");if(!toggle||!panel)return;panel.style.display=toggle.checked?"none":"";}var reload=document.querySelector(".pm-reload");if(reload)reload.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('reloading') ?: 'Reloading …') .'");});var diag=document.querySelector(".pm-diagnostics");if(diag)diag.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('running') ?: 'Running …') .'");});var refresh=document.querySelector(".pm-refresh");if(refresh)refresh.addEventListener("click",function(){setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('checking') ?: 'Checking …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-update-link,.pm-restore-link");if(!a)return;setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");});document.addEventListener("click",function(ev){var a=ev.target.closest(".pm-maintenance-link");if(!a)return;var confirmText=a.getAttribute("data-confirm")||"";if(confirmText&&!window.confirm(confirmText)){ev.preventDefault();return;}setBusy(a,a.getAttribute("data-busy")||"'. rcube::Q($this->gettext('maintenance_running') ?: 'Running maintenance ... ') .'");});Array.prototype.slice.call(document.querySelectorAll("#pm-table tbody .pm-select")).forEach(function(box){syncRowState(box);box.addEventListener("change",function(){if(box.dataset.pmAutoSelected&&(!document.querySelector(".pm-only-outdated")||!document.querySelector(".pm-only-outdated").checked||!box.checked)){delete box.dataset.pmAutoSelected;}syncRowState(box);updateBulkButtons();});});Array.prototype.slice.call(document.querySelectorAll(".pm-only-outdated,.pm-only-enabled,.pm-only-errors")).forEach(function(filterBox){filterBox.addEventListener("change",function(){if(filterBox.classList.contains("pm-only-outdated"))syncOutdatedSelection();applyFilters();});});var maintToggle=document.querySelector(".pm-hide-maint-activity");if(maintToggle){var key="pm-hide-maint-activity";try{maintToggle.checked=window.localStorage&&window.localStorage.getItem(key)==="1";}catch(e){}applyMaintenanceActivityVisibility();maintToggle.addEventListener("change",function(){try{if(window.localStorage){window.localStorage.setItem(key,maintToggle.checked?"1":"0");}}catch(e){}applyMaintenanceActivityVisibility();});}syncOutdatedSelection();applyFilters();updateBulkButtons();var bulkBtn=document.querySelector(".pm-update-selected");if(bulkBtn){bulkBtn.addEventListener("click",function(){var selected=getSelectedPlugins();if(!selected.length){alert("'. rcube::Q($this->gettext('no_plugins_selected') ?: 'No plugins selected.') .'");return;}setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('updating') ?: 'Updating …') .'");var token=this.getAttribute("data-token")||"";var url="?_task=settings&_action=plugin.plugin_manager&_pm_update_all=1&_pm_selected="+encodeURIComponent(selected.join(","));if(token){url+="&_token="+encodeURIComponent(token);}window.location.href=url;});}var deleteBtn=document.querySelector(".pm-delete-selected-backups");if(deleteBtn){deleteBtn.addEventListener("click",function(){var selected=getSelectedPlugins();if(!selected.length){alert("'. rcube::Q($this->gettext('no_plugins_selected') ?: 'No plugins selected.') .'");return;}var backupCount=getSelectedBackupCount();if(!confirmDeleteBackups(selected.length,backupCount)){return;}setBusy(this,this.getAttribute("data-busy")||"'. rcube::Q($this->gettext('deleting_backups') ?: 'Deleting backups ... ') .'");var token=this.getAttribute("data-token")||"";var url="?_task=settings&_action=plugin.plugin_manager.delete_backups&_pm_selected="+encodeURIComponent(selected.join(","));if(token){url+="&_token="+encodeURIComponent(token);}window.location.href=url;});}})();</script>';
 
         // Column sorting
         $h[] = '<script>(function(){var table=document.getElementById("pm-table");if(!table)return;var thead=table.tHead,tbody=table.tBodies[0];if(!thead||!tbody)return;function txt(el){return(el&&(el.textContent||el.innerText)||"").trim();}function parseSemver(v){v=(v||"").trim();if(!v||v==="—")return{k:[-1]};var vl=v.toLowerCase();if(vl==="unknown"||vl==="unk"||vl==="?")return{k:[-1]};v=v.replace(/^v/i,"");var parts=v.split(/[^0-9a-zA-Z]+/).filter(Boolean);var out=[];for(var i=0;i<parts.length;i++){var p=parts[i];if(/^\d+$/.test(p))out.push(parseInt(p,10));else out.push(-0.5);}return{k:out,raw:v};}function cmpCells(aCell,bCell,type){if(type==="bool"){var av=parseInt(aCell.getAttribute("data-sort")||"0",10);var bv=parseInt(bCell.getAttribute("data-sort")||"0",10);return av-bv;}if(type==="semver"){var sa=parseSemver(txt(aCell)).k,sb=parseSemver(txt(bCell)).k;var n=Math.max(sa.length,sb.length);for(var i=0;i<n;i++){var ai=(i<sa.length)?sa[i]:0,bi=(i<sb.length)?sb[i]:0;if(ai!==bi)return ai-bi;}return 0;}var a=txt(aCell).toLowerCase(),b=txt(bCell).toLowerCase();if(a===b)return 0;return a>b?1:-1;}var headers=thead.rows[0].cells;var state={col:null,dir:"asc"};function clearIndicators(){for(var i=0;i<headers.length;i++){headers[i].classList.remove("pm-sorted-asc","pm-sorted-desc");headers[i].removeAttribute("aria-sort");}}function sortBy(colIndex,type,dir){var rows=Array.prototype.slice.call(tbody.rows);rows.sort(function(r1,r2){var c1=r1.cells[colIndex]||document.createElement("td");var c2=r2.cells[colIndex]||document.createElement("td");var c=cmpCells(c1,c2,type);return dir==="asc"?c:-c;});var frag=document.createDocumentFragment();rows.forEach(function(r){frag.appendChild(r);});tbody.appendChild(frag);clearIndicators();var th=headers[colIndex];th.classList.add(dir==="asc"?"pm-sorted-asc":"pm-sorted-desc");th.setAttribute("aria-sort",dir==="asc"?"ascending":"descending");}for(let i=0;i<headers.length;i++){let th=headers[i];if(!th.classList.contains("pm-sort"))continue;th.addEventListener("click",function(){var type=th.getAttribute("data-type")||"text";if(state.col===i){state.dir=(state.dir==="asc"?"desc":"asc");}else{state.col=i;state.dir="asc";}sortBy(i,type,state.dir);});}})();</script>';
@@ -782,6 +854,25 @@ class plugin_manager extends rcube_plugin
         foreach ($candidates as $mf) {
             if (is_readable($mf)) { $meta['mainfile'] = $mf; break; }
         }
+
+        if (empty($meta['mainfile'])) {
+            foreach (glob($dir . DIRECTORY_SEPARATOR . '*.php') ?: array() as $mf) {
+                if (!is_readable($mf)) {
+                    continue;
+                }
+
+                $src = @file_get_contents($mf);
+                if (!is_string($src) || $src === '') {
+                    continue;
+                }
+
+                if (preg_match('/class\s+\w+\s+extends\s+(?:\\\)?rcube_plugin\b/i', $src)) {
+                    $meta['mainfile'] = $mf;
+                    break;
+                }
+            }
+        }
+
         return $meta;
     }
 
@@ -798,10 +889,21 @@ class plugin_manager extends rcube_plugin
         if (!empty($meta['mainfile'])) {
             $src = @file_get_contents($meta['mainfile']);
             if ($src !== false) {
+                if (preg_match('/const\s+PLUGIN_VERSION\s*=\s*[\'"]([^\'"]+)[\'"]\s*;?/i', $src, $m)) {
+                    return trim($m[1]);
+                }
                 if (preg_match('/const\s+VERSION\s*=\s*[\'"]([^\'"]+)[\'"]\s*;?/i', $src, $m)) {
                     return trim($m[1]);
                 }
                 if (preg_match('/define\s*\(\s*[\'"]VERSION[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\)\s*;?/i', $src, $m)) {
+                    return trim($m[1]);
+                }
+                if (preg_match('/[\'"]version[\'"]\s*=>\s*self::PLUGIN_VERSION\b/i', $src)) {
+                    if (preg_match('/const\s+PLUGIN_VERSION\s*=\s*[\'"]([^\'"]+)[\'"]\s*;?/i', $src, $m)) {
+                        return trim($m[1]);
+                    }
+                }
+                if (preg_match('/[\'"]version[\'"]\s*=>\s*[\'"]([^\'"]+)[\'"]/i', $src, $m)) {
                     return trim($m[1]);
                 }
                 if (preg_match('/^\s*\*\s*Version:\s*([0-9][0-9a-zA-Z\.\-\+_]*)/mi', $src, $m)) {
@@ -813,7 +915,10 @@ class plugin_manager extends rcube_plugin
         $map = $this->pm_read_installed_versions();
         $base = basename($dir);
         if (!empty($map[$base]) && !empty($map[$base]['version'])) {
-            return (string)$map[$base]['version'];
+            $version = trim((string)$map[$base]['version']);
+            if ($version !== '' && strpos($version, 'local-') !== 0) {
+                return $version;
+            }
         }
 
         return $this->pm_read_plugin_version($dir);
@@ -1096,8 +1201,14 @@ class plugin_manager extends rcube_plugin
         }
         try {
             $ok = $this->perform_update($plugin_dir);
-            if ($ok === true) {
+            if (is_array($ok) && !empty($ok['ok'])) {
                 $rc->output->show_message('' . rcube::Q($this->gettext('plugin_update_good')) . '.', 'confirmation');
+                if (!empty($ok['advisory']) && is_array($ok['advisory'])) {
+                    $this->flash_post_update_advisory($ok['advisory']);
+                }
+                if (!empty($ok['hook']) && is_array($ok['hook'])) {
+                    $this->flash_post_update_hook_result($ok['hook'], $plugin_dir);
+                }
             } else {
                 $rc->output->show_message('Update finished: ' . rcube::Q((string)$ok), 'notice');
             }
@@ -1171,12 +1282,164 @@ class plugin_manager extends rcube_plugin
         $rc->output->redirect(array('_task'=>'settings','_action' => 'plugin.plugin_manager'));
     }
 
+    function action_delete_backups()
+    {
+        $rc = $this->rc;
+        if (!$this->is_update_admin()) {
+            $this->flash_add($this->gettext('not_authorized'), 'error');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+        if (!$this->request_token_valid()) {
+            $this->flash_add($this->gettext('not_authorized'), 'error');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+
+        $selected = $this->sanitize_selected_plugins(rcube_utils::get_input_value('_pm_selected', rcube_utils::INPUT_GPC));
+        if (empty($selected)) {
+            $this->flash_add($this->gettext('delete_backups_no_selection') ?: 'No valid selected plugins were provided.', 'warning');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+
+        $valid_plugins = 0;
+        $deleted_dirs = 0;
+        $plugins_without_backups = 0;
+        $failed_deletions = 0;
+        $failure_details = array();
+
+        foreach ($selected as $plugin) {
+            $live_dir = $this->resolve_live_plugin_dir($plugin);
+            if ($live_dir === null) {
+                continue;
+            }
+
+            $valid_plugins++;
+            $backup_dirs = $this->find_plugin_backup_dirs($plugin);
+            if (empty($backup_dirs)) {
+                $plugins_without_backups++;
+                continue;
+            }
+
+            foreach ($backup_dirs as $backup_dir) {
+                if ($this->delete_directory_recursive($backup_dir)) {
+                    $deleted_dirs++;
+                    continue;
+                }
+
+                $failed_deletions++;
+                $failure_details[] = basename($backup_dir);
+            }
+        }
+
+        if ($valid_plugins === 0) {
+            $this->flash_add($this->gettext('delete_backups_no_selection') ?: 'No valid selected plugins were provided.', 'warning');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+
+        if ($deleted_dirs === 0 && $plugins_without_backups === 0 && $failed_deletions === 0) {
+            $this->flash_add($this->gettext('delete_backups_no_valid_targets') ?: 'No valid backup folders were found for the selected plugins.', 'warning');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+
+        $summary = sprintf(
+            $this->gettext('delete_backups_summary') ?: 'Backup deletion complete: %d deleted, %d plugins had no backups, %d failed.',
+            $deleted_dirs,
+            $plugins_without_backups,
+            $failed_deletions
+        );
+        $this->flash_add($summary, $failed_deletions > 0 ? 'warning' : 'confirmation');
+
+        if (!empty($failure_details)) {
+            $detail_list = array_slice($failure_details, 0, 12);
+            $detail_text = implode(', ', $detail_list);
+            if (count($failure_details) > count($detail_list)) {
+                $detail_text .= ', +' . (count($failure_details) - count($detail_list)) . ' more';
+            }
+
+            $this->flash_add(
+                sprintf(
+                    $this->gettext('delete_backups_failed_detail') ?: 'Failed backup deletions: %s',
+                    $detail_text
+                ),
+                'warning'
+            );
+        }
+
+        $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+    }
+
+    function action_run_maintenance()
+    {
+        $rc = $this->rc;
+        $plugin = rcube_utils::get_input_value('_pm', rcube_utils::INPUT_GPC);
+        $plugin = preg_replace('~[^a-zA-Z0-9_\-\.]~', '', (string) $plugin);
+
+        $this->log_debug('manual_maintenance_requested', array('plugin' => $plugin));
+
+        if (!$this->is_update_admin()) {
+            $this->flash_add($this->gettext('not_authorized'), 'error');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+        if (!$this->request_token_valid()) {
+            $this->flash_add($this->gettext('not_authorized'), 'error');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+        if ($plugin === '') {
+            $this->flash_add($this->gettext('missing_parameter'), 'error');
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+
+        $preflight = $this->preflight_post_update_hook($plugin, 'manual');
+        if (empty($preflight['ok'])) {
+            $this->log_debug('manual_maintenance_ineligible', array('plugin' => $plugin));
+            $reasons = !empty($preflight['reasons']) && is_array($preflight['reasons']) ? implode(' ', $preflight['reasons']) : '';
+            $this->record_maintenance_audit(array(
+                'plugin' => $plugin,
+                'event' => 'manual',
+                'result' => 'refused',
+                'message' => $reasons !== '' ? $reasons : 'Manual maintenance not runnable.',
+                'current_version' => null,
+                'previous_version' => null,
+                'hook_summary' => isset($preflight['hook_path']) ? $preflight['hook_path'] : '',
+            ));
+            $this->flash_add(
+                sprintf($this->gettext('maintenance_unavailable') ?: 'Maintenance could not run for plugin %s: invalid hook configuration.', $plugin)
+                . ($reasons !== '' ? ' ' . $reasons : ''),
+                'warning'
+            );
+            $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+            return;
+        }
+
+        $context = $this->build_manual_maintenance_context($plugin);
+        $result = $this->run_allowlisted_post_update_hook($plugin, 'manual', $context);
+        $this->flash_manual_maintenance_result($result, $plugin);
+        $rc->output->redirect(array('_task' => 'settings', '_action' => 'plugin.plugin_manager'));
+    }
+
     private function perform_update($dir_name)
     {
         $root = $this->plugins_root_dir();
         if (!$root) { throw new Exception(rcube::Q($this->gettext('no_locate_dir'))); }
+        $this->last_post_update_advisory = null;
 
         $plugdir = $root . DIRECTORY_SEPARATOR . $dir_name;
+        $previous_version = null;
+        if (is_dir($plugdir)) {
+            try {
+                $previous_meta = $this->read_plugin_meta($plugdir);
+                $previous_version = $this->detect_local_version($plugdir, $previous_meta);
+            } catch (Exception $e) {
+                $previous_version = null;
+            }
+        }
 
         $do_bak = $this->config->get('pm_backups', true);
         if ($do_bak) {
@@ -1239,6 +1502,12 @@ class plugin_manager extends rcube_plugin
             @unlink($tmpzip);
             throw new Exception('Cannot open zip');
         }
+        if (!$this->is_safe_update_zip_archive($zip)) {
+            $zip->close();
+            @unlink($tmpzip);
+            $this->rrmdir($tmpdir);
+            throw new Exception('Update archive contains unsafe paths.');
+        }
         $zip->extractTo($tmpdir);
         $zip->close();
         @unlink($tmpzip);
@@ -1270,7 +1539,18 @@ class plugin_manager extends rcube_plugin
         
         $this->pm_write_central_versions();
 
-        return true;
+        $advisory = $this->inspect_post_update_requirements($dir_name);
+        $this->last_post_update_advisory = $advisory;
+        $hook_result = $this->run_allowlisted_post_update_hook($dir_name, 'update', array(
+            'previous_version' => $previous_version,
+            'current_version' => isset($ver_final) ? (string) $ver_final : null,
+        ));
+
+        return array(
+            'ok' => true,
+            'advisory' => $advisory,
+            'hook' => $hook_result,
+        );
     }
 
     private function recurse_copy($src, $dst, $preserve = array())
@@ -1393,6 +1673,133 @@ class plugin_manager extends rcube_plugin
         if (!is_dir($this->data_dir)) @mkdir($this->data_dir, 0775, true);
         $this->central_version_file    = $this->data_dir . DIRECTORY_SEPARATOR . 'version.json';
         $this->installed_versions_file = $this->data_dir . DIRECTORY_SEPARATOR . 'installed_versions.json';
+        $this->maintenance_audit_file  = $this->data_dir . DIRECTORY_SEPARATOR . 'maintenance_audit.json';
+
+        $this->pm_ensure_json_file($this->installed_versions_file, array());
+        $this->pm_ensure_json_file($this->central_version_file, $this->pm_default_central_versions_data());
+    }
+
+    private function pm_default_central_versions_data()
+    {
+        return array(
+            'generated_at' => gmdate('c'),
+            'plugins_root' => null,
+            'plugins' => array(),
+        );
+    }
+
+    private function pm_ensure_json_file($path, array $default)
+    {
+        if (!is_string($path) || $path === '' || is_file($path)) {
+            return;
+        }
+
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+
+        if (!is_dir($dir) || !is_writable($dir)) {
+            return;
+        }
+
+        @file_put_contents($path, json_encode($default, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    }
+
+    private function pm_bootstrap_version_data()
+    {
+        $this->pm_data_init();
+
+        if ($this->pm_installed_versions_need_bootstrap()) {
+            $this->pm_write_installed_versions($this->pm_build_installed_versions_snapshot());
+        }
+
+        if ($this->pm_central_versions_need_bootstrap()) {
+            $this->pm_write_central_versions();
+        }
+    }
+
+    private function pm_installed_versions_need_bootstrap()
+    {
+        if (!is_file($this->installed_versions_file) || filesize($this->installed_versions_file) === 0) {
+            return true;
+        }
+
+        $map = $this->pm_read_installed_versions();
+        if (count($map) === 0) {
+            return true;
+        }
+
+        foreach ($map as $entry) {
+            $version = isset($entry['version']) ? trim((string) $entry['version']) : '';
+            if ($version === '' || strpos($version, 'local-') === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function pm_central_versions_need_bootstrap()
+    {
+        if (!is_file($this->central_version_file) || filesize($this->central_version_file) === 0) {
+            return true;
+        }
+
+        $raw = @file_get_contents($this->central_version_file);
+        $json = @json_decode($raw, true);
+        if (!is_array($json)) {
+            return true;
+        }
+
+        if (!isset($json['plugins']) || !is_array($json['plugins'])) {
+            return true;
+        }
+
+        if (empty($json['plugins'])) {
+            $plugins_root = $this->plugins_root_dir();
+            if ($plugins_root && is_dir($plugins_root)) {
+                foreach (new DirectoryIterator($plugins_root) as $entry) {
+                    if ($entry->isDot() || !$entry->isDir()) {
+                        continue;
+                    }
+
+                    if (preg_match('/\.bak-\d{8}-\d{6}$/', $entry->getFilename())) {
+                        continue;
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        return empty($json['generated_at']);
+    }
+
+    private function pm_build_installed_versions_snapshot()
+    {
+        $plugins_root = $this->plugins_root_dir();
+        if (!$plugins_root || !is_dir($plugins_root)) {
+            return array();
+        }
+
+        $snapshot = array();
+        $timestamp = gmdate('c');
+        $plugins = $this->discover_plugins();
+
+        foreach ($plugins as $dir_name => $plugin) {
+            if (empty($plugin['dir']) || !is_dir($plugin['dir'])) {
+                continue;
+            }
+
+            $meta = $this->read_plugin_meta($plugin['dir']);
+            $snapshot[$dir_name] = array(
+                'version' => $this->detect_local_version($plugin['dir'], $meta),
+                'last_updated' => $timestamp,
+            );
+        }
+
+        return $snapshot;
     }
 
     private function pm_read_plugin_version($dir)
@@ -1587,12 +1994,7 @@ class plugin_manager extends rcube_plugin
         $plug = rcube_utils::get_input_value('_pm_plug', rcube_utils::INPUT_GPC);
         $plug = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$plug);
 
-        $root = $this->plugins_root_dir();
-        if (!$root) {
-            echo json_encode(array('ok'=>false, 'error'=>'plugdir_not_found'));
-            exit;
-        }
-        $plugdir = ($plug !== '' && $root) ? ($root . DIRECTORY_SEPARATOR . $plug) : null;
+        $plugdir = $plug !== '' ? $this->resolve_live_plugin_dir($plug) : null;
         $cfg   = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php') : null;
         $cfgd  = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php.dist') : null;
         $cfgs  = $plugdir ? ($plugdir . DIRECTORY_SEPARATOR . 'config.inc.php.sample') : null;
@@ -1636,12 +2038,7 @@ class plugin_manager extends rcube_plugin
         $plug = preg_replace('~[^a-zA-Z0-9_\-\.]+~', '', (string)$plug);
         $content = rcube_utils::get_input_value('_pm_content', rcube_utils::INPUT_POST, true);
 
-        $root = $this->plugins_root_dir();
-        if (!$root) {
-            echo json_encode(array('ok'=>false, 'error'=>'plugdir_not_found'));
-            exit;
-        }
-        $plugdir = ($plug !== '' && $root) ? ($root . DIRECTORY_SEPARATOR . $plug) : null;
+        $plugdir = $plug !== '' ? $this->resolve_live_plugin_dir($plug) : null;
 
         if ($plug === '' || $content === null) {
             echo json_encode(array('ok'=>false, 'error'=>'bad_params'));
@@ -1668,6 +2065,46 @@ class plugin_manager extends rcube_plugin
         }
         echo json_encode(array('ok'=>true, 'file'=>$file));
         exit;
+    }
+
+    private function is_safe_update_zip_archive(ZipArchive $zip): bool
+    {
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            if (!is_array($stat) || !isset($stat['name'])) {
+                return false;
+            }
+
+            $name = (string) $stat['name'];
+            if ($name === '' || strpos($name, "\0") !== false) {
+                return false;
+            }
+
+            $normalized = str_replace('\\', '/', $name);
+            if ($normalized[0] === '/' || preg_match('~^[A-Za-z]:/~', $normalized)) {
+                return false;
+            }
+
+            $parts = explode('/', rtrim($normalized, '/'));
+            foreach ($parts as $part) {
+                if ($part === '' || $part === '.') {
+                    continue;
+                }
+                if ($part === '..') {
+                    return false;
+                }
+            }
+
+            if (isset($stat['external_attributes_opsys'], $stat['external_attributes'])
+                && (int) $stat['external_attributes_opsys'] === ZipArchive::OPSYS_UNIX) {
+                $mode = ((int) $stat['external_attributes'] >> 16) & 0xF000;
+                if ($mode === 0xA000) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private function pm_cache_last_ts() {
@@ -1810,9 +2247,131 @@ class plugin_manager extends rcube_plugin
         return array_keys($out);
     }
 
+    private function resolve_live_plugin_dir(string $plugin): ?string
+    {
+        $root = $this->plugins_root_dir();
+        if (!$root || !preg_match('/^[A-Za-z0-9_.-]+$/', $plugin)) {
+            return null;
+        }
+
+        $candidate = $root . DIRECTORY_SEPARATOR . $plugin;
+        if (is_link($candidate) || !is_dir($candidate)) {
+            return null;
+        }
+
+        $real_root = realpath($root);
+        $real_candidate = realpath($candidate);
+        if (!$real_root || !$real_candidate) {
+            return null;
+        }
+
+        $prefix = rtrim($real_root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (strpos($real_candidate . DIRECTORY_SEPARATOR, $prefix) !== 0) {
+            return null;
+        }
+
+        return $real_candidate;
+    }
+
+    private function find_plugin_backup_dirs(string $plugin): array
+    {
+        $root = $this->plugins_root_dir();
+        $live_dir = $this->resolve_live_plugin_dir($plugin);
+        if (!$root || $live_dir === null) {
+            return array();
+        }
+
+        $paths = array();
+        foreach ((array) @scandir($root) as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $candidate = $root . DIRECTORY_SEPARATOR . $entry;
+            if ($this->is_valid_plugin_backup_dir($plugin, $candidate)) {
+                $paths[] = realpath($candidate);
+            }
+        }
+
+        sort($paths, SORT_STRING);
+        return array_values(array_unique(array_filter($paths)));
+    }
+
+    private function is_valid_plugin_backup_dir(string $plugin, string $path): bool
+    {
+        $root = $this->plugins_root_dir();
+        $live_dir = $this->resolve_live_plugin_dir($plugin);
+        if (!$root || $live_dir === null || !preg_match('/^[A-Za-z0-9_.-]+$/', $plugin)) {
+            return false;
+        }
+
+        $basename = basename($path);
+        $pattern = '/^' . preg_quote($plugin, '/') . '\.bak-\d{8}-\d{6}$/';
+        if (!preg_match($pattern, $basename)) {
+            return false;
+        }
+
+        if (is_link($path) || !is_dir($path)) {
+            return false;
+        }
+
+        $real_root = realpath($root);
+        $real_path = realpath($path);
+        if (!$real_root || !$real_path || !is_dir($real_path)) {
+            return false;
+        }
+
+        $prefix = rtrim($real_root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (strpos($real_path . DIRECTORY_SEPARATOR, $prefix) !== 0) {
+            return false;
+        }
+
+        if ($real_path === $live_dir) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function delete_directory_recursive(string $path): bool
+    {
+        if (is_link($path) || !is_dir($path)) {
+            return false;
+        }
+
+        $real_path = realpath($path);
+        if (!$real_path || !is_dir($real_path) || is_link($real_path)) {
+            return false;
+        }
+
+        $scan = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($real_path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($scan as $item) {
+            if ($item->isLink()) {
+                return false;
+            }
+        }
+
+        $delete = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($real_path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($delete as $item) {
+            $target = $item->getPathname();
+            $ok = $item->isDir() ? @rmdir($target) : @unlink($target);
+            if (!$ok) {
+                return false;
+            }
+        }
+
+        return @rmdir($real_path);
+    }
+
     private function update_all_outdated($dry = false, array $selected = array())
     {
-        $result = array('ok'=>0,'fail'=>0,'skipped'=>array());
+        $result = array('ok'=>0,'fail'=>0,'skipped'=>array(),'advisories'=>array(),'hooks'=>array());
         $selected_lookup = array();
         foreach ($selected as $name) {
             $selected_lookup[(string) $name] = true;
@@ -1859,13 +2418,908 @@ class plugin_manager extends rcube_plugin
             }
             try {
                 $ok = $this->perform_update($base);
-                if ($ok === true) $result['ok']++;
+                if (is_array($ok) && !empty($ok['ok'])) {
+                    $result['ok']++;
+                    if (!empty($ok['advisory']) && is_array($ok['advisory']) && ($ok['advisory']['status'] ?? 'none') !== 'none') {
+                        $result['advisories'][] = $ok['advisory'];
+                    }
+                    if (!empty($ok['hook']) && is_array($ok['hook']) && ($ok['hook']['status'] ?? 'none') !== 'none') {
+                        $result['hooks'][] = $ok['hook'];
+                    }
+                }
                 else $result['fail']++;
             } catch (Exception $e) {
                 $result['fail']++;
             }
         }
         return $result;
+    }
+
+    private function inspect_post_update_requirements(string $plugin): array
+    {
+        $plugin_path = $this->resolve_live_plugin_dir($plugin);
+        if ($plugin_path === null) {
+            return array(
+                'status' => 'none',
+                'plugin' => $plugin,
+                'artifacts_found' => array(),
+                'composer_signals' => array(),
+                'message' => '',
+                'details' => array(),
+            );
+        }
+
+        $artifacts = $this->scan_plugin_upgrade_artifacts($plugin_path);
+        $composer_signals = $this->inspect_plugin_composer_signals($plugin_path);
+
+        return $this->build_post_update_advisory($artifacts, $composer_signals, $plugin);
+    }
+
+    private function scan_plugin_upgrade_artifacts(string $plugin_path): array
+    {
+        $resolved = $this->validate_plugin_inspection_path($plugin_path);
+        if ($resolved === null) {
+            return array();
+        }
+
+        $targets = array(
+            'sql' => 'warning',
+            'db' => 'warning',
+            'database' => 'warning',
+            'migrations' => 'warning',
+            'updates' => 'warning',
+            'upgrade' => 'warning',
+            'upgrade.md' => 'warning',
+            'upgrade.txt' => 'warning',
+            'upgrading' => 'warning',
+            'upgrading.md' => 'warning',
+            'upgrading.txt' => 'warning',
+            'install' => 'warning',
+            'install.md' => 'warning',
+            'install.txt' => 'warning',
+            'changelog' => 'info',
+            'changelog.md' => 'info',
+            'readme' => 'info',
+            'readme.md' => 'info',
+        );
+
+        $found = array();
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($resolved, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($iterator->getDepth() > 2 || $item->isLink()) {
+                continue;
+            }
+
+            $name = strtolower($item->getBasename());
+            if (!isset($targets[$name])) {
+                continue;
+            }
+
+            $path = $item->getPathname();
+            $real = realpath($path);
+            if (!$real || strpos($real . DIRECTORY_SEPARATOR, $resolved . DIRECTORY_SEPARATOR) !== 0) {
+                continue;
+            }
+
+            $relative = ltrim(substr($real, strlen($resolved)), DIRECTORY_SEPARATOR);
+            if ($relative === '') {
+                $relative = basename($real);
+            }
+
+            $key = strtolower($relative);
+            $existing = $found[$key] ?? null;
+            if ($existing === null || ($targets[$name] === 'warning' && $existing['severity'] !== 'warning')) {
+                $found[$key] = array(
+                    'path' => str_replace(DIRECTORY_SEPARATOR, '/', $relative),
+                    'severity' => $targets[$name],
+                    'kind' => $item->isDir() ? 'dir' : 'file',
+                );
+            }
+        }
+
+        usort($found, function ($a, $b) {
+            if ($a['severity'] !== $b['severity']) {
+                return $a['severity'] === 'warning' ? -1 : 1;
+            }
+
+            return strcmp($a['path'], $b['path']);
+        });
+
+        return array_values($found);
+    }
+
+    private function inspect_plugin_composer_signals(string $plugin_path): array
+    {
+        $resolved = $this->validate_plugin_inspection_path($plugin_path);
+        if ($resolved === null) {
+            return array();
+        }
+
+        $composer_file = $resolved . DIRECTORY_SEPARATOR . 'composer.json';
+        if (!is_file($composer_file) || is_link($composer_file) || !is_readable($composer_file)) {
+            return array();
+        }
+
+        $raw = @file_get_contents($composer_file);
+        if (!is_string($raw) || $raw === '') {
+            return array();
+        }
+
+        $json = json_decode($raw, true);
+        if (!is_array($json)) {
+            return array(
+                array(
+                    'signal' => 'composer.json unreadable or malformed',
+                    'severity' => 'info',
+                ),
+            );
+        }
+
+        $signals = array();
+        $script_patterns = array(
+            '/\b(post-install|post-update|install|update|migrat|schema|database|sql|upgrade)\b/i',
+            '/\b(seed|setup)\b/i',
+        );
+
+        if (!empty($json['scripts']) && is_array($json['scripts'])) {
+            foreach ($json['scripts'] as $event => $handlers) {
+                $matched = preg_match('/\b(post-install|post-update|install|update)\b/i', (string) $event) === 1;
+                $handlers = is_array($handlers) ? $handlers : array($handlers);
+
+                foreach ($handlers as $handler) {
+                    $handler = is_scalar($handler) ? (string) $handler : '';
+                    if ($handler === '') {
+                        continue;
+                    }
+
+                    foreach ($script_patterns as $pattern) {
+                        if ($matched || preg_match($pattern, $handler)) {
+                            $signals[] = array(
+                                'signal' => 'composer script: ' . $event,
+                                'severity' => 'warning',
+                            );
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (array('suggest', 'extra') as $key) {
+            if (empty($json[$key])) {
+                continue;
+            }
+
+            $encoded = json_encode($json[$key]);
+            if (!is_string($encoded) || !preg_match('/\b(migrat|schema|database|sql|upgrade|install|setup)\b/i', $encoded)) {
+                continue;
+            }
+
+            $signals[] = array(
+                'signal' => 'composer ' . $key . ' mentions upgrade/setup',
+                'severity' => $key === 'extra' ? 'warning' : 'info',
+            );
+        }
+
+        return $signals;
+    }
+
+    private function build_post_update_advisory(array $artifacts, array $composer_signals, string $plugin): array
+    {
+        $status = 'none';
+        $details = array();
+
+        foreach ($artifacts as $artifact) {
+            $details[] = 'Artifact: ' . $artifact['path'];
+            if (($artifact['severity'] ?? 'info') === 'warning') {
+                $status = 'warning';
+            } elseif ($status === 'none') {
+                $status = 'info';
+            }
+        }
+
+        foreach ($composer_signals as $signal) {
+            $details[] = $signal['signal'];
+            if (($signal['severity'] ?? 'info') === 'warning') {
+                $status = 'warning';
+            } elseif ($status === 'none') {
+                $status = 'info';
+            }
+        }
+
+        $message = '';
+        if ($status === 'warning') {
+            $message = $this->gettext('post_update_advisory_warning')
+                ?: 'Plugin updated successfully. Manual database or upgrade steps may be required.';
+        } elseif ($status === 'info') {
+            $message = $this->gettext('post_update_advisory_info')
+                ?: 'Upgrade notes detected for this plugin. Review plugin documentation before using it.';
+        }
+
+        return array(
+            'status' => $status,
+            'plugin' => $plugin,
+            'artifacts_found' => array_values(array_map(function ($artifact) {
+                return $artifact['path'];
+            }, $artifacts)),
+            'composer_signals' => array_values(array_map(function ($signal) {
+                return $signal['signal'];
+            }, $composer_signals)),
+            'message' => $message,
+            'details' => $details,
+        );
+    }
+
+    private function flash_post_update_advisory(array $advisory): void
+    {
+        $status = isset($advisory['status']) ? (string) $advisory['status'] : 'none';
+        if ($status === 'none') {
+            return;
+        }
+
+        $plugin = isset($advisory['plugin']) ? (string) $advisory['plugin'] : '';
+        $message = isset($advisory['message']) ? trim((string) $advisory['message']) : '';
+        if ($message === '') {
+            return;
+        }
+
+        $type = $status === 'warning' ? 'warning' : 'notice';
+        $prefix = $plugin !== '' ? ($plugin . ': ') : '';
+        $this->flash_add($prefix . $message, $type);
+
+        $details = array();
+        if (!empty($advisory['artifacts_found']) && is_array($advisory['artifacts_found'])) {
+            $details[] = 'Artifacts: ' . implode(', ', array_slice($advisory['artifacts_found'], 0, 8));
+        }
+        if (!empty($advisory['composer_signals']) && is_array($advisory['composer_signals'])) {
+            $details[] = 'Composer: ' . implode(', ', array_slice($advisory['composer_signals'], 0, 4));
+        }
+        if (!empty($details)) {
+            $this->flash_add($prefix . implode(' | ', $details), 'notice');
+        }
+    }
+
+    private function get_post_update_hook_config(string $plugin): ?array
+    {
+        if (!preg_match('/^[A-Za-z0-9_.-]+$/', $plugin)) {
+            return null;
+        }
+
+        if (!isset($this->post_update_hooks[$plugin]) || !is_array($this->post_update_hooks[$plugin])) {
+            return null;
+        }
+
+        return $this->post_update_hooks[$plugin];
+    }
+
+    private function is_valid_internal_hook_relative_path(string $path): bool
+    {
+        if ($path === '' || strlen($path) > 255) {
+            return false;
+        }
+
+        if ($path[0] === '/' || $path[0] === '\\') {
+            return false;
+        }
+
+        if (preg_match('/(^|[\/\\\\])\.\.([\/\\\\]|$)/', $path)) {
+            return false;
+        }
+
+        return preg_match('/^[A-Za-z0-9._\/-]+$/', $path) === 1;
+    }
+
+    private function resolve_internal_post_update_hook_file(string $plugin, string $path): ?string
+    {
+        if (!preg_match('/^[A-Za-z0-9_.-]+$/', $plugin)) {
+            return null;
+        }
+
+        if (!$this->is_valid_internal_hook_relative_path($path)) {
+            return null;
+        }
+
+        $base = __DIR__ . DIRECTORY_SEPARATOR . 'webhooks' . DIRECTORY_SEPARATOR . $plugin;
+        if (is_link($base) || !is_dir($base) || !is_readable($base)) {
+            return null;
+        }
+
+        $resolved_base = realpath($base);
+        if (!$resolved_base || is_link($resolved_base)) {
+            return null;
+        }
+
+        $candidate = $resolved_base . DIRECTORY_SEPARATOR . str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+        if (is_link($candidate) || !file_exists($candidate) || !is_file($candidate) || !is_readable($candidate)) {
+            return null;
+        }
+
+        $resolved = realpath($candidate);
+        if (!$resolved || is_link($resolved)) {
+            return null;
+        }
+
+        $prefix = rtrim($resolved_base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (strpos($resolved, $prefix) !== 0) {
+            return null;
+        }
+
+        return $resolved;
+    }
+
+    private function preflight_post_update_hook(string $plugin, string $event): array
+    {
+        $result = array(
+            'ok' => false,
+            'state' => 'none',
+            'plugin' => $plugin,
+            'event' => $event,
+            'reasons' => array(),
+            'warnings' => array(),
+            'hook' => null,
+            'hook_file' => null,
+            'hook_path' => '',
+            'plugin_path' => null,
+        );
+
+        if (!preg_match('/^[A-Za-z0-9_.-]+$/', $plugin)) {
+            $result['state'] = 'blocked';
+            $result['reasons'][] = 'Invalid plugin name.';
+            return $result;
+        }
+
+        $hook = $this->get_post_update_hook_config($plugin);
+        if ($hook === null) {
+            return $result;
+        }
+
+        $result['state'] = 'blocked';
+        $result['hook'] = $hook;
+
+        if (empty($hook['enabled'])) {
+            $result['reasons'][] = 'Hook is disabled.';
+            return $result;
+        }
+
+        if (strtolower((string) ($hook['type'] ?? '')) !== 'internal') {
+            $result['reasons'][] = 'Unsupported hook type.';
+            return $result;
+        }
+
+        $plugin_path = $this->resolve_live_plugin_dir($plugin);
+        if ($plugin_path === null) {
+            $result['reasons'][] = 'Plugin directory is not valid.';
+            return $result;
+        }
+        $result['plugin_path'] = $plugin_path;
+
+        if ($event === 'manual' && isset($hook['allow_manual_run']) && !$hook['allow_manual_run']) {
+            $result['reasons'][] = 'Manual run is not allowed.';
+            return $result;
+        }
+
+        if (!$this->should_run_post_update_hook($hook, $event)) {
+            $result['reasons'][] = 'Hook is not configured for the ' . $event . ' event.';
+            return $result;
+        }
+
+        $hook_path = isset($hook['path']) ? trim((string) $hook['path']) : '';
+        $result['hook_path'] = $hook_path;
+        if (!$this->is_valid_internal_hook_relative_path($hook_path)) {
+            $result['reasons'][] = 'Hook path is invalid.';
+            return $result;
+        }
+
+        $hook_file = $this->resolve_internal_post_update_hook_file($plugin, $hook_path);
+        if ($hook_file === null) {
+            $result['reasons'][] = 'Hook file is not available under plugin_manager/webhooks.';
+            return $result;
+        }
+
+        if ($event !== 'manual' && !empty($hook['require_confirmation'])) {
+            $result['warnings'][] = 'Hook requires manual confirmation before automatic runs.';
+        }
+
+        $result['ok'] = true;
+        $result['state'] = 'available';
+        $result['hook_file'] = $hook_file;
+        return $result;
+    }
+
+    private function should_run_post_update_hook(array $hook, string $event): bool
+    {
+        $run_on = isset($hook['run_on']) ? $hook['run_on'] : array('update');
+        if (!is_array($run_on)) {
+            $run_on = array($run_on);
+        }
+
+        $allowed = array();
+        foreach ($run_on as $value) {
+            $value = strtolower(trim((string) $value));
+            if ($value === 'install' || $value === 'update' || $value === 'manual') {
+                $allowed[$value] = true;
+            }
+        }
+
+        return isset($allowed[strtolower($event)]);
+    }
+
+    private function can_plugin_run_manual_maintenance(string $plugin): bool
+    {
+        $preflight = $this->preflight_post_update_hook($plugin, 'manual');
+        return !empty($preflight['ok']);
+    }
+
+    private function should_show_manual_maintenance_link(string $plugin): bool
+    {
+        if (!$this->can_plugin_run_manual_maintenance($plugin)) {
+            return false;
+        }
+
+        $hook = $this->get_post_update_hook_config($plugin);
+        if (!is_array($hook)) {
+            return false;
+        }
+
+        if (!empty($hook['require_confirmation'])) {
+            return true;
+        }
+
+        return !empty($hook['show_manual_link']);
+    }
+
+    private function get_plugin_maintenance_state(string $plugin): array
+    {
+        $preflight = $this->preflight_post_update_hook($plugin, 'manual');
+        $latest = $this->get_latest_maintenance_audit_for_plugin($plugin);
+
+        if (!empty($preflight['ok'])) {
+            if (!empty($latest) && !empty($latest['result']) && in_array($latest['result'], array('success', 'warning'), true) && !empty($latest['ts']) && ((time() - (int) $latest['ts']) < 86400)) {
+                return array('state' => 'ran_recently', 'reasons' => array(), 'warnings' => array('Maintenance ran recently.'));
+            }
+            return array('state' => 'available', 'reasons' => array(), 'warnings' => $preflight['warnings']);
+        }
+
+        if (($preflight['state'] ?? 'none') === 'blocked') {
+            return array('state' => 'blocked', 'reasons' => $preflight['reasons'], 'warnings' => $preflight['warnings']);
+        }
+
+        return array('state' => 'none', 'reasons' => array(), 'warnings' => array());
+    }
+
+    private function get_plugin_maintenance_badge_data(string $plugin): array
+    {
+        $state = $this->get_plugin_maintenance_state($plugin);
+        $badge = array(
+            'state' => $state['state'],
+            'label' => '',
+            'title' => '',
+        );
+
+        $labels = array(
+            'available' => $this->gettext('maintenance_status_available') ?: 'Available',
+            'blocked' => $this->gettext('maintenance_status_blocked') ?: 'Blocked',
+            'ran_recently' => $this->gettext('maintenance_status_ran_recently') ?: 'Ran recently',
+        );
+
+        if ($badge['state'] !== 'none' && isset($labels[$badge['state']])) {
+            $badge['label'] = $labels[$badge['state']];
+        }
+
+        $parts = array();
+        if (!empty($state['reasons'])) {
+            $parts[] = implode(' ', $state['reasons']);
+        }
+        if (!empty($state['warnings'])) {
+            $parts[] = implode(' ', array_slice($state['warnings'], 0, 3));
+        }
+        if (empty($parts) && $badge['state'] === 'available') {
+            $parts[] = $this->gettext('maintenance_status_available_title') ?: 'Post-updates are enabled for this plugin.';
+        }
+        $badge['title'] = implode(' ', $parts);
+
+        return $badge;
+    }
+
+    private function build_manual_maintenance_context(string $plugin): array
+    {
+        $plugin_path = $this->resolve_live_plugin_dir($plugin);
+        $current_version = null;
+        if ($plugin_path !== null) {
+            try {
+                $meta = $this->read_plugin_meta($plugin_path);
+                $current_version = $this->detect_local_version($plugin_path, $meta);
+            } catch (Exception $e) {
+                $current_version = null;
+            }
+        }
+
+        return array(
+            'plugin' => $plugin,
+            'plugin_path' => $plugin_path,
+            'event' => 'manual',
+            'previous_version' => null,
+            'current_version' => $current_version,
+            'request_time' => time(),
+        );
+    }
+
+    private function run_allowlisted_post_update_hook(string $plugin, string $event, array $context = array()): array
+    {
+        $result = array(
+            'ok' => false,
+            'status' => 'none',
+            'message' => '',
+            'details' => array(),
+            'plugin' => $plugin,
+            'event' => $event,
+            'executed' => false,
+        );
+
+        $this->log_debug('post_update_hook_consider', array('plugin' => $plugin, 'event' => $event));
+
+        if (!$this->is_update_admin() || !$this->request_token_valid()) {
+            $this->log_debug('post_update_hook_refused', array('plugin' => $plugin, 'reason' => 'auth'));
+            $result['status'] = 'warning';
+            $result['message'] = $this->gettext('post_update_hook_refused_auth') ?: 'Post-update hook refused: authorization failed.';
+            $result['audit_result'] = 'refused';
+            return $result;
+        }
+
+        $preflight = $this->preflight_post_update_hook($plugin, $event);
+        if (($preflight['state'] ?? 'none') === 'none') {
+            return $result;
+        }
+
+        if (empty($preflight['ok'])) {
+            $this->log_debug('post_update_hook_refused', array('plugin' => $plugin, 'reason' => implode('; ', $preflight['reasons'] ?? array())));
+            $result['status'] = 'warning';
+            $result['message'] = !empty($preflight['reasons']) ? implode(' ', $preflight['reasons']) : ($this->gettext('post_update_hook_refused_path') ?: 'Post-update hook refused: invalid hook path.');
+            $result['details'] = $preflight['warnings'] ?? array();
+            $result['audit_result'] = 'refused';
+            $this->record_maintenance_audit(array(
+                'plugin' => $plugin,
+                'event' => $event,
+                'result' => 'refused',
+                'message' => $result['message'],
+                'current_version' => $context['current_version'] ?? null,
+                'previous_version' => $context['previous_version'] ?? null,
+                'hook_summary' => $preflight['hook_path'] ?? '',
+            ));
+            return $result;
+        }
+
+        $hook = $preflight['hook'];
+        if ($event !== 'manual' && !empty($hook['require_confirmation'])) {
+            $this->log_debug('post_update_hook_skip', array('plugin' => $plugin, 'reason' => 'confirmation_required'));
+            $result['status'] = 'notice';
+            $result['message'] = $this->gettext('post_update_hook_confirmation_required') ?: 'Post-update hook available but not run because confirmation is required.';
+            $result['audit_result'] = 'skipped';
+            $this->record_maintenance_audit(array(
+                'plugin' => $plugin,
+                'event' => $event,
+                'result' => 'skipped',
+                'message' => $result['message'],
+                'current_version' => $context['current_version'] ?? null,
+                'previous_version' => $context['previous_version'] ?? null,
+                'hook_summary' => $preflight['hook_path'] ?? '',
+            ));
+            return $result;
+        }
+
+        $hook_file = $preflight['hook_file'];
+        $hook_path = isset($preflight['hook_path']) ? (string) $preflight['hook_path'] : '';
+
+        $timeout = isset($hook['timeout']) ? (int) $hook['timeout'] : 0;
+        if ($timeout > 0) {
+            $this->log_debug('post_update_hook_timeout_reserved', array('plugin' => $plugin, 'timeout' => $timeout));
+        }
+
+        $hook_context = array(
+            'plugin' => $plugin,
+            'plugin_path' => $preflight['plugin_path'],
+            'event' => $event,
+            'previous_version' => $context['previous_version'] ?? null,
+            'current_version' => $context['current_version'] ?? null,
+            'request_time' => time(),
+        );
+
+        $this->log_debug('post_update_hook_execute', array(
+            'plugin' => $plugin,
+            'event' => $event,
+            'hook_file' => $hook_file,
+        ));
+
+        try {
+            $hook_result = $this->execute_internal_post_update_hook($hook_file, $hook_context);
+            $hook_result['plugin'] = $plugin;
+            $hook_result['event'] = $event;
+            $hook_result['executed'] = true;
+            $hook_result['path'] = $hook_path;
+            $this->log_debug('post_update_hook_complete', array(
+                'plugin' => $plugin,
+                'ok' => $hook_result['ok'],
+                'status' => $hook_result['status'],
+                'message' => $hook_result['message'],
+                'path' => $hook_path,
+            ));
+            $audit_result = !empty($hook_result['ok']) ? 'success' : 'failure';
+            if (($hook_result['status'] ?? '') === 'notice') {
+                $audit_result = 'warning';
+            }
+            $this->record_maintenance_audit(array(
+                'plugin' => $plugin,
+                'event' => $event,
+                'result' => $audit_result,
+                'message' => $hook_result['message'],
+                'current_version' => $context['current_version'] ?? null,
+                'previous_version' => $context['previous_version'] ?? null,
+                'hook_summary' => $hook_path,
+            ));
+
+            return $hook_result;
+        } catch (Throwable $e) {
+            $this->log_debug('post_update_hook_failed', array(
+                'plugin' => $plugin,
+                'path' => $hook_path,
+                'error' => $e->getMessage(),
+            ));
+
+            $this->record_maintenance_audit(array(
+                'plugin' => $plugin,
+                'event' => $event,
+                'result' => 'failure',
+                'message' => $e->getMessage(),
+                'current_version' => $context['current_version'] ?? null,
+                'previous_version' => $context['previous_version'] ?? null,
+                'hook_summary' => $hook_path,
+            ));
+
+            return array(
+                'ok' => false,
+                'status' => 'warning',
+                'message' => $this->gettext('post_update_hook_failed') ?: 'Plugin updated successfully, but the post-update hook failed.',
+                'details' => array($e->getMessage()),
+                'plugin' => $plugin,
+                'event' => $event,
+                'executed' => true,
+            );
+        }
+    }
+
+    private function execute_internal_post_update_hook(string $hook_file, array $context): array
+    {
+        if (is_link($hook_file) || !is_file($hook_file) || !is_readable($hook_file)) {
+            throw new RuntimeException('Hook file is not readable.');
+        }
+
+        $hook = (static function (string $file) {
+            return require $file;
+        })($hook_file);
+
+        if (is_array($hook) && isset($hook['callable']) && is_callable($hook['callable'])) {
+            $hook = $hook['callable'];
+        }
+
+        if (!is_callable($hook)) {
+            throw new RuntimeException('Hook file did not return a callable.');
+        }
+
+        $result = $hook($context);
+
+        return $this->normalize_post_update_hook_result($result);
+    }
+
+    private function normalize_post_update_hook_result($result): array
+    {
+        if (!is_array($result)) {
+            throw new RuntimeException('Hook result must be an array.');
+        }
+
+        if (!array_key_exists('ok', $result)) {
+            throw new RuntimeException('Hook result missing ok flag.');
+        }
+
+        $ok = (bool) $result['ok'];
+        $message = isset($result['message']) ? trim((string) $result['message']) : '';
+        $details = isset($result['details']) && is_array($result['details']) ? $result['details'] : array();
+        $normalized_details = array();
+        foreach ($details as $detail) {
+            if (is_scalar($detail) || (is_object($detail) && method_exists($detail, '__toString'))) {
+                $text = trim((string) $detail);
+                if ($text !== '') {
+                    $normalized_details[] = $text;
+                }
+            }
+        }
+
+        return array(
+            'ok' => $ok,
+            'status' => $ok ? 'confirmation' : 'warning',
+            'message' => $message !== '' ? $message : ($ok
+                ? ($this->gettext('post_update_hook_completed') ?: 'Plugin updated successfully. Post-update hook completed.')
+                : ($this->gettext('post_update_hook_failed') ?: 'Plugin updated successfully, but the post-update hook failed.')),
+            'details' => $normalized_details,
+        );
+    }
+
+    private function flash_post_update_hook_result(array $result, string $plugin): void
+    {
+        $status = isset($result['status']) ? (string) $result['status'] : 'none';
+        if ($status === 'none') {
+            return;
+        }
+
+        $message = isset($result['message']) ? trim((string) $result['message']) : '';
+        if ($message === '') {
+            return;
+        }
+
+        $type_map = array(
+            'confirmation' => 'confirmation',
+            'notice' => 'notice',
+            'warning' => 'warning',
+        );
+        $type = $type_map[$status] ?? 'notice';
+        $prefix = $plugin !== '' ? ($plugin . ': ') : '';
+        $this->flash_add($prefix . $message, $type);
+
+        if (!empty($result['details']) && is_array($result['details'])) {
+            $detail_list = array_slice($result['details'], 0, 4);
+            $detail_text = implode(' | ', $detail_list);
+            if (count($result['details']) > count($detail_list)) {
+                $detail_text .= ' | +' . (count($result['details']) - count($detail_list)) . ' more';
+            }
+            $this->flash_add($prefix . $detail_text, 'notice');
+        }
+    }
+
+    private function flash_manual_maintenance_result(array $result, string $plugin): void
+    {
+        $status = isset($result['status']) ? (string) $result['status'] : 'warning';
+        $ok = !empty($result['ok']);
+        $details = isset($result['details']) && is_array($result['details']) ? $result['details'] : array();
+
+        if ($ok) {
+            $message = sprintf($this->gettext('maintenance_success') ?: 'Maintenance completed for plugin %s.', $plugin);
+            $type = 'confirmation';
+        } else {
+            $base_message = sprintf($this->gettext('maintenance_failure') ?: 'Maintenance failed for plugin %s.', $plugin);
+            $message = isset($result['message']) && trim((string) $result['message']) !== ''
+                ? ($base_message . ' ' . trim((string) $result['message']))
+                : $base_message;
+            $type = $status === 'notice' ? 'notice' : 'warning';
+        }
+
+        $this->flash_add($message, $type);
+
+        if (!empty($details)) {
+            $detail_list = array_slice($details, 0, 4);
+            $detail_text = implode(' | ', $detail_list);
+            if (count($details) > count($detail_list)) {
+                $detail_text .= ' | +' . (count($details) - count($detail_list)) . ' more';
+            }
+            $this->flash_add($plugin . ': ' . $detail_text, 'notice');
+        }
+    }
+
+    private function get_manual_maintenance_label(string $plugin, array $hook): string
+    {
+        $label = isset($hook['label']) ? trim((string) $hook['label']) : '';
+        if ($label !== '') {
+            return $label;
+        }
+
+        return $this->gettext('run_maintenance') ?: 'Run maintenance';
+    }
+
+    private function record_maintenance_audit(array $entry): void
+    {
+        if (!$this->maintenance_audit_enabled || !$this->maintenance_audit_file) {
+            return;
+        }
+
+        $row = array(
+            'ts' => isset($entry['ts']) ? (int) $entry['ts'] : time(),
+            'plugin' => isset($entry['plugin']) ? (string) $entry['plugin'] : '',
+            'event' => isset($entry['event']) ? (string) $entry['event'] : '',
+            'result' => isset($entry['result']) ? (string) $entry['result'] : '',
+            'message' => isset($entry['message']) ? trim((string) $entry['message']) : '',
+            'current_version' => isset($entry['current_version']) ? (string) $entry['current_version'] : '',
+            'previous_version' => isset($entry['previous_version']) ? (string) $entry['previous_version'] : '',
+            'hook_summary' => isset($entry['hook_summary']) ? (string) $entry['hook_summary'] : '',
+        );
+
+        $history = $this->get_recent_maintenance_audit($this->maintenance_audit_limit);
+        array_unshift($history, $row);
+        $history = array_slice($history, 0, $this->maintenance_audit_limit);
+        $written = @file_put_contents($this->maintenance_audit_file, json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        if ($written === false) {
+            $this->log_debug('maintenance_audit_write_failed', array('file' => $this->maintenance_audit_file));
+        }
+    }
+
+    private function get_recent_maintenance_audit(int $limit = 20): array
+    {
+        if (!$this->maintenance_audit_file || !is_file($this->maintenance_audit_file) || !is_readable($this->maintenance_audit_file)) {
+            return array();
+        }
+
+        $raw = @file_get_contents($this->maintenance_audit_file);
+        $json = json_decode((string) $raw, true);
+        if (!is_array($json)) {
+            return array();
+        }
+
+        return array_slice($json, 0, max(1, $limit));
+    }
+
+    private function get_latest_maintenance_audit_for_plugin(string $plugin): ?array
+    {
+        foreach ($this->get_recent_maintenance_audit($this->maintenance_audit_limit) as $entry) {
+            if (!empty($entry['plugin']) && (string) $entry['plugin'] === $plugin) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
+
+    private function render_maintenance_activity_panel(): string
+    {
+        $items = $this->get_recent_maintenance_audit(12);
+        if (empty($items)) {
+            return '';
+        }
+
+        $html = '<div class="pm-maint-activity"><h3>' . rcube::Q($this->gettext('maintenance_recent_activity') ?: 'Recent maintenance activity') . '</h3>';
+        $html .= '<table><thead><tr>'
+            . '<th>' . rcube::Q($this->gettext('last_checked') ?: 'Time') . '</th>'
+            . '<th>' . rcube::Q($this->gettext('plugin') ?: 'Plugin') . '</th>'
+            . '<th>' . rcube::Q($this->gettext('status') ?: 'Status') . '</th>'
+            . '<th>' . rcube::Q($this->gettext('details') ?: 'Details') . '</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($items as $item) {
+            $result = isset($item['result']) ? (string) $item['result'] : 'skipped';
+            $message = isset($item['message']) ? (string) $item['message'] : '';
+            $event = isset($item['event']) ? (string) $item['event'] : '';
+            $plugin = isset($item['plugin']) ? (string) $item['plugin'] : '';
+            $ts = !empty($item['ts']) ? date('Y-m-d H:i:s', (int) $item['ts']) : '';
+            $html .= '<tr>'
+                . '<td>' . rcube::Q($ts) . '</td>'
+                . '<td>' . rcube::Q($plugin) . '<div class="hint">' . rcube::Q($event) . '</div></td>'
+                . '<td><span class="pm-maint-result pm-maint-result-' . rcube::Q($result) . '">' . rcube::Q($result) . '</span></td>'
+                . '<td>' . rcube::Q($message) . '</td>'
+                . '</tr>';
+        }
+
+        $html .= '</tbody></table></div>';
+        return $html;
+    }
+
+    private function validate_plugin_inspection_path(string $plugin_path): ?string
+    {
+        if ($plugin_path === '' || is_link($plugin_path) || !is_dir($plugin_path)) {
+            return null;
+        }
+
+        $real_plugin = realpath($plugin_path);
+        $real_root = $this->plugins_root_dir();
+        if (!$real_plugin || !$real_root) {
+            return null;
+        }
+
+        $prefix = rtrim($real_root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (strpos($real_plugin . DIRECTORY_SEPARATOR, $prefix) !== 0) {
+            return null;
+        }
+
+        return $real_plugin;
     }
 
 

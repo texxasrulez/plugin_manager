@@ -13,7 +13,149 @@ $config['pm_update_channel'] = 'release';     // 'release' or 'dev'
 // ===== Bulk update =====
 $config['pm_enable_update_select'] = true;       // show top-level "Update Selected" button
 
-// true = write central data/version.json on init; set false to only refresh on pm_end_update()
+// ===== Allowlisted post-update hooks =====
+// Explicit admin allowlist only. Nothing runs unless listed here and enabled.
+// Supported type in this phase: 'internal'
+// Hook files are owned by Plugin Manager itself and must live under plugin_manager/webhooks/<plugin>/.
+$config['pm_post_update_hooks'] = [
+  // 'plugin_name' => [
+  //   'enabled' => true,                  // master switch for this plugin hook
+  //   'type' => 'internal',              // only Plugin Manager-owned internal hook files are supported
+  //   'path' => 'post-update.php',       // relative path under plugin_manager/webhooks/<plugin>/
+  //   'label' => 'Run post-update maintenance', // optional UI label for maintenance actions
+  //   'timeout' => 10, // parsed for validation/logging; not enforced in this phase
+  //   'args' => [],
+  //   'run_on' => ['install', 'update', 'manual'], // supported events
+  //   'allow_manual_run' => true,        // allow manual execution through the backend/manual route
+  //   'show_manual_link' => true,       // show the row-level "Run maintenance" link even when auto-run is enabled
+  //   'require_confirmation' => false,   // auto-run skipped unless manually confirmed when true
+  // ],
+  //
+  // Example: texxasrulez/calendar
+  // Upstream docs note backend-specific SQL initialization under drivers/*/SQL
+  // and companion plugin requirements such as libcalendaring/libkolab.
+  // 'calendar' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review calendar maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: mstilkerich/rcmcarddav
+  // Upstream docs note that database migration happens on the next login
+  // and that major upgrades may require admin config review.
+  // 'rcmcarddav' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review CardDAV maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: texxasrulez/additional_imap
+  // Upstream docs note composer installs inject SQL automatically, while manual installs require SQL import.
+  // 'additional_imap' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review Additional IMAP maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: texxasrulez/additional_smtp
+  // Upstream docs note composer installs inject SQL automatically, while manual installs require SQL import.
+  // 'additional_smtp' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review Additional SMTP maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: pimlie/authres_status
+  // Upstream docs recommend reviewing trusted Authentication-Results authserv-id settings.
+  // 'authres_status' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review authres_status maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: texxasrulez/identity_switch
+  // This example is intentionally conservative and focuses on post-upgrade config review.
+  // 'identity_switch' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review Identity Switch maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: texxasrulez/libkolab
+  // Review UPGRADING/README and any SQL/bin helpers after upgrade.
+  // 'libkolab' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review libkolab maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: texxasrulez/scheduled_sending
+  // Upstream docs require queue schema plus a worker or cron call using the configured token.
+  // 'scheduled_sending' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review Scheduled Sending maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+  //
+  // Example: texxasrulez/tasklist
+  // Review CalDAV/RoundDAV endpoint settings and task list discovery after upgrade.
+  // 'tasklist' => [
+  //   'enabled' => true,
+  //   'type' => 'internal',
+  //   'path' => 'post-update.php',
+  //   'label' => 'Review Tasklist maintenance',
+  //   'run_on' => ['update', 'manual'],
+  //   'allow_manual_run' => true,
+  //   'show_manual_link' => true,
+  //   'require_confirmation' => true,
+  // ],
+];
+
+// ===== Maintenance audit trail =====
+$config['pm_maintenance_audit_enabled'] = true;  // record recent maintenance runs/skips/refusals in data/
+$config['pm_maintenance_audit_limit'] = 100;     // maximum number of audit entries to retain
+
+// true = refresh central data/version.json on init; missing data/version.json and data/installed_versions.json are bootstrapped automatically
 $config['pm_write_central_on_init'] = true;
 
 // Map specific plugin dirs to GitHub repos (owner/repo or full URL)
